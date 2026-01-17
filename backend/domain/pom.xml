@@ -14,7 +14,31 @@
   <artifactId>domain</artifactId>
 
   <dependencies>
-    <!-- Somente JUnit no futuro -->
+      <!-- JUnit 5 -->
+      <dependency>
+          <groupId>org.junit.jupiter</groupId>
+          <artifactId>junit-jupiter</artifactId>
+          <version>5.10.1</version>
+          <scope>test</scope>
+      </dependency>
+
+      <!-- AssertJ -->
+      <dependency>
+          <groupId>org.assertj</groupId>
+          <artifactId>assertj-core</artifactId>
+          <version>3.25.3</version>
+          <scope>test</scope>
+      </dependency>
   </dependencies>
+
+  <build>
+      <plugins>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <version>3.2.5</version>
+          </plugin>
+      </plugins>
+  </build>
 
 </project>

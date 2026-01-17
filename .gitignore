@@ -1,0 +1,13 @@
+# Java
+target/
+*.log
+
+# Node
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
