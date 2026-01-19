@@ -12,6 +12,7 @@ import com.davydcr.document.domain.model.DocumentId;
 import com.davydcr.document.domain.model.ExtractedContent;
 import com.davydcr.document.domain.model.ProcessingResult;
 import com.davydcr.document.domain.model.ProcessingStatus;
+import com.davydcr.document.domain.model.DocumentType;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,6 +38,42 @@ public class ProcessDocumentUseCase {
     }
 
     /**
+     * Executa o processamento completo do documento criando-o primeiro.
+     * Este é o ponto de entrada para uploads de arquivo.
+     * 1. Cria o documento
+     * 2. Extração de conteúdo (OCR)
+     * 3. Classificação automática
+     * 4. Persistência do resultado
+     */
+    public ProcessDocumentOutput executeWithDocumentCreation(ProcessDocumentInput input, String originalFileName) {
+        Objects.requireNonNull(input, "input cannot be null");
+        Objects.requireNonNull(originalFileName, "originalFileName cannot be null");
+
+        try {
+            // Criar ID do documento
+            DocumentId docId = new DocumentId(java.util.UUID.fromString(input.getDocumentId()));
+            
+            // Criar novo documento
+            Document document = new Document(
+                    docId,
+                    originalFileName,
+                    DocumentType.valueOf(input.getFileType())
+            );
+
+            // Salvar documento inicial
+            documentRepository.save(document);
+
+            // Prosseguir com processamento
+            return processDocument(input, document);
+
+        } catch (DomainException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new DomainException("Error creating and processing document: " + e.getMessage()) {};
+        }
+    }
+
+    /**
      * Executa o processamento completo do documento:
      * 1. Extração de conteúdo (OCR)
      * 2. Classificação automática
@@ -51,6 +88,17 @@ public class ProcessDocumentUseCase {
             Document document = documentRepository.findById(docId)
                     .orElseThrow(() -> new DomainException("Document not found: " + docId) {});
 
+            return processDocument(input, document);
+
+        } catch (DomainException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new DomainException("Error processing document: " + e.getMessage()) {};
+        }
+    }
+
+    private ProcessDocumentOutput processDocument(ProcessDocumentInput input, Document document) {
+        try {
             // Transição de estado
             document.queue();
             document.startProcessing();

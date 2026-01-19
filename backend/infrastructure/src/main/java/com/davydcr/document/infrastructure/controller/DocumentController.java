@@ -91,14 +91,14 @@ public class DocumentController {
             String filePath = storageService.saveDocument(file);
             logger.info("Document saved to: {} with ID: {}", filePath, documentId.value());
             
-            // Processar documento com OCR real
+            // Processar documento com OCR real (cria e processa)
             ProcessDocumentInput input = new ProcessDocumentInput(
                     documentId.value().toString(),
                     filePath,
                     detectedType
             );
             
-            ProcessDocumentOutput result = processDocumentUseCase.execute(input);
+            ProcessDocumentOutput result = processDocumentUseCase.executeWithDocumentCreation(input, file.getOriginalFilename());
             logger.info("Document processed successfully: {}", documentId.value());
             
             return ResponseEntity.status(HttpStatus.CREATED).body(result);

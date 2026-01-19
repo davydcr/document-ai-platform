@@ -7,15 +7,15 @@
 -- Descrição: Armazena informações dos documentos processados
 -- ============================================================
 CREATE TABLE documents (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    id VARCHAR(36) PRIMARY KEY,
+    original_name VARCHAR(255) NOT NULL,
     type VARCHAR(50) NOT NULL,
-    content_path VARCHAR(500),
     status VARCHAR(50) NOT NULL,
-    file_size_bytes BIGINT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by_user_id UUID,
+    user_id VARCHAR(36),
+    extracted_text TEXT,
+    classification_label VARCHAR(255),
+    classification_confidence INTEGER,
     CONSTRAINT check_valid_type CHECK (type IN ('PDF', 'IMAGE', 'TXT')),
     CONSTRAINT check_valid_status CHECK (status IN ('RECEIVED', 'PROCESSING', 'COMPLETED', 'FAILED'))
 );
@@ -29,8 +29,8 @@ CREATE INDEX idx_documents_type ON documents(type);
 -- Descrição: Armazena resultados de classificação dos documentos
 -- ============================================================
 CREATE TABLE document_classifications (
-    id UUID PRIMARY KEY,
-    document_id UUID NOT NULL,
+    id VARCHAR(36) PRIMARY KEY,
+    document_id VARCHAR(36) NOT NULL,
     classification_label VARCHAR(255),
     confidence DECIMAL(5, 4),
     classification_status VARCHAR(50) NOT NULL,
@@ -51,8 +51,8 @@ CREATE INDEX idx_document_classifications_status ON document_classifications(cla
 -- Descrição: Armazena resultados de extração de conteúdo
 -- ============================================================
 CREATE TABLE document_extraction_results (
-    id UUID PRIMARY KEY,
-    document_id UUID NOT NULL,
+    id VARCHAR(36) PRIMARY KEY,
+    document_id VARCHAR(36) NOT NULL,
     extracted_content TEXT,
     extraction_status VARCHAR(50) NOT NULL,
     ocr_engine VARCHAR(100),
@@ -74,7 +74,7 @@ CREATE INDEX idx_document_extraction_status ON document_extraction_results(extra
 -- Descrição: Armazena informações de usuários
 -- ============================================================
 CREATE TABLE users (
-    id UUID PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'USER',
@@ -91,12 +91,12 @@ CREATE INDEX idx_users_email ON users(email);
 -- Descrição: Log de eventos de processamento de documentos
 -- ============================================================
 CREATE TABLE document_processing_logs (
-    id UUID PRIMARY KEY,
-    document_id UUID NOT NULL,
+    id VARCHAR(36) PRIMARY KEY,
+    document_id VARCHAR(36) NOT NULL,
     event_type VARCHAR(100) NOT NULL,
     event_status VARCHAR(50) NOT NULL,
     details TEXT,
-    user_id UUID,
+    user_id VARCHAR(36),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_doc_log FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
     CONSTRAINT fk_user_log FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -111,12 +111,12 @@ CREATE INDEX idx_document_processing_logs_event_type ON document_processing_logs
 -- Descrição: Auditoria de alterações em documentos
 -- ============================================================
 CREATE TABLE document_audit (
-    id UUID PRIMARY KEY,
-    document_id UUID NOT NULL,
+    id VARCHAR(36) PRIMARY KEY,
+    document_id VARCHAR(36) NOT NULL,
     change_type VARCHAR(50) NOT NULL,
     old_value TEXT,
     new_value TEXT,
-    changed_by_user_id UUID,
+    changed_by_user_id VARCHAR(36),
     changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_valid_change_type CHECK (change_type IN ('CREATE', 'UPDATE', 'DELETE', 'STATUS_CHANGE')),
     CONSTRAINT fk_doc_audit FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
@@ -125,18 +125,3 @@ CREATE TABLE document_audit (
 
 CREATE INDEX idx_document_audit_document_id ON document_audit(document_id);
 CREATE INDEX idx_document_audit_changed_at ON document_audit(changed_at);
-
--- ============================================================
--- Comments / Documentação
--- ============================================================
-COMMENT ON TABLE documents IS 'Armazena informações principais dos documentos processados pelo sistema';
-COMMENT ON COLUMN documents.id IS 'ID único do documento (UUID)';
-COMMENT ON COLUMN documents.name IS 'Nome original do arquivo do documento';
-COMMENT ON COLUMN documents.type IS 'Tipo de documento (PDF, IMAGE, TXT)';
-COMMENT ON COLUMN documents.status IS 'Status do processamento (RECEIVED, PROCESSING, COMPLETED, FAILED)';
-
-COMMENT ON TABLE document_classifications IS 'Resultados de classificação automática dos documentos';
-COMMENT ON TABLE document_extraction_results IS 'Resultados de extração de conteúdo (OCR/Text)';
-COMMENT ON TABLE users IS 'Informações de usuários do sistema';
-COMMENT ON TABLE document_processing_logs IS 'Log detalhado de eventos de processamento';
-COMMENT ON TABLE document_audit IS 'Auditoria de todas as mudanças nos documentos';

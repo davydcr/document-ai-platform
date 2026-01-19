@@ -159,6 +159,16 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>3.2.1</version>
+        <configuration>
+          <mainClass>com.davydcr.document.DocumentAiApplication</mainClass>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Maven Surefire Plugin for Unit Tests -->
