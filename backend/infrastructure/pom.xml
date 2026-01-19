@@ -103,6 +103,19 @@
       <artifactId>flyway-core</artifactId>
       <version>9.22.3</version>
     </dependency>
+
+    <!-- Springdoc OpenAPI / Swagger UI for API Documentation -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>2.1.0</version>
+    </dependency>
+
+    <!-- Jackson for better JSON serialization in Swagger -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
