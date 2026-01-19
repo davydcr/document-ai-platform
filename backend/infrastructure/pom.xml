@@ -96,6 +96,13 @@
     </dependency>
 
     <!-- Mockito already in domain/application -->
+
+    <!-- Flyway for Database Migrations -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <version>9.22.3</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -12,8 +12,8 @@ spring:
   test:
     database:
       replace: any
-
-logging:
-  level:
+  flyway:
+    enabled: false
     root: INFO
     com.davydcr.document: DEBUG
+    org.flywaydb: INFO
