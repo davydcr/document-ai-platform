@@ -21,24 +21,24 @@ services:
       timeout: 5s
       retries: 5
 
-  # Ollama LLM Service
-  ollama:
-    image: ollama/ollama:latest
-    container_name: document-ai-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_models:/root/.ollama
-    networks:
-      - document-ai-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    environment:
-      OLLAMA_NUM_GPU: 0  # Set to number of GPUs available, or 0 for CPU only
-    command: serve
+  # Ollama LLM Service (DISABLED TEMPORARILY - Port conflict)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: document-ai-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_models:/root/.ollama
+  #   networks:
+  #     - document-ai-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   environment:
+  #     OLLAMA_NUM_GPU: 0  # Set to number of GPUs available, or 0 for CPU only
+  #   command: serve
 
   # RabbitMQ Message Broker (Semana 7 - Async Processing)
   rabbitmq:
@@ -69,8 +69,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
@@ -79,7 +77,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: document_ai_secure_password
       APP_DOCUMENT_UPLOAD_DIR: /var/document-ai/uploads
       APP_OCR_TEMP_DIR: /var/document-ai/temp
-      APP_CLASSIFICATION_LLM_ENABLED: "true"
+      APP_CLASSIFICATION_LLM_ENABLED: "false"
       APP_CLASSIFICATION_LLM_URL: http://ollama:11434
       APP_CLASSIFICATION_LLM_MODEL: mistral
       SPRING_RABBITMQ_HOST: rabbitmq
