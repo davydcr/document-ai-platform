@@ -5,10 +5,24 @@ import com.davydcr.document.domain.model.ClassificationLabel;
 import com.davydcr.document.domain.model.Confidence;
 import com.davydcr.document.domain.model.DocumentClassification;
 import com.davydcr.document.domain.model.ExtractedContent;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Implementação mock de ClassificationService (fallback).
+ * Usado quando app.classification.llm-enabled=false ou Ollama não está disponível.
+ */
 @Service
+@ConditionalOnProperty(
+    name = "app.classification.llm-enabled",
+    havingValue = "false",
+    matchIfMissing = true
+)
 public class ClassificationServiceImpl implements ClassificationService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(ClassificationServiceImpl.class);
 
     @Override
     public DocumentClassification classify(ExtractedContent content) {
@@ -17,7 +31,7 @@ public class ClassificationServiceImpl implements ClassificationService {
 
     @Override
     public DocumentClassification classify(String text) {
-        // Mock implementation - em produção, chamaria Ollama ou outro LLM
+        logger.debug("Using mock classification (LLM not enabled)");
         
         ClassificationLabel label;
         Confidence confidence;
@@ -45,12 +59,11 @@ public class ClassificationServiceImpl implements ClassificationService {
 
     @Override
     public String getModelName() {
-        return "ollama-llama3";
+        return "mock-llm";
     }
 
     @Override
     public boolean isAvailable() {
-        // Mock: simula que o serviço está disponível
         return true;
     }
 }
