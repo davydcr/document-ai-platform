@@ -26,7 +26,7 @@ Plataforma de processamento automático de documentos com IA, OCR e classificaç
 ### Iniciar Aplicação
 
 ```bash
-cd /home/davy/document-ai-platform
+cd docker
 
 # Opção 1: Script automático
 ./start.sh

@@ -69,9 +69,11 @@ jobs:
         run: |
           echo "Deploying ${{ inputs.image_tag }} to staging..."
           
+          cd docker
+          
           # Download and update docker-compose.yml
-          IMAGE_TAG=${{ inputs.image_tag }} docker-compose -f docker-compose.yml down
-          IMAGE_TAG=${{ inputs.image_tag }} docker-compose -f docker-compose.yml up -d
+          IMAGE_TAG=${{ inputs.image_tag }} docker-compose down
+          IMAGE_TAG=${{ inputs.image_tag }} docker-compose up -d
           
           echo "Waiting for services to be healthy..."
           sleep 10
@@ -108,7 +110,7 @@ jobs:
           
           # Check logs
           echo "Recent logs:"
-          docker-compose logs --tail=10 backend
+          docker-compose -f docker/docker-compose.yml logs --tail=10 backend
 
       - name: 🔔 Deployment notification
         if: always()
