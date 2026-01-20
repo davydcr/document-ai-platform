@@ -63,8 +63,8 @@ services:
   # Document AI Platform Backend
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: document-ai-backend
     depends_on:
       postgres:
