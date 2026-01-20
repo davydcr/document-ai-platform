@@ -12,6 +12,7 @@ import com.davydcr.document.application.usecase.ExtractDocumentContentUseCase;
 import com.davydcr.document.application.usecase.GetDocumentUseCase;
 import com.davydcr.document.application.usecase.ProcessDocumentUseCase;
 import com.davydcr.document.domain.model.DocumentId;
+import com.davydcr.document.infrastructure.observability.ObservabilityService;
 import com.davydcr.document.infrastructure.service.DocumentStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,17 +42,20 @@ public class DocumentController {
     private final ExtractDocumentContentUseCase extractDocumentContentUseCase;
     private final GetDocumentUseCase getDocumentUseCase;
     private final DocumentStorageService storageService;
+    private final ObservabilityService observabilityService;
 
     public DocumentController(ProcessDocumentUseCase processDocumentUseCase,
                              ClassifyDocumentUseCase classifyDocumentUseCase,
                              ExtractDocumentContentUseCase extractDocumentContentUseCase,
                              GetDocumentUseCase getDocumentUseCase,
-                             DocumentStorageService storageService) {
+                             DocumentStorageService storageService,
+                             ObservabilityService observabilityService) {
         this.processDocumentUseCase = processDocumentUseCase;
         this.classifyDocumentUseCase = classifyDocumentUseCase;
         this.extractDocumentContentUseCase = extractDocumentContentUseCase;
         this.getDocumentUseCase = getDocumentUseCase;
         this.storageService = storageService;
+        this.observabilityService = observabilityService;
     }
 
     @PostMapping("/upload")
@@ -72,6 +76,7 @@ public class DocumentController {
             @Parameter(description = "Tipo do documento (PDF, IMAGE, TXT)", example = "PDF")
             @RequestParam(defaultValue = "PDF") String fileType) {
         
+        long startTime = System.currentTimeMillis();
         try {
             logger.info("Document upload started: fileName={}, fileType={}, size={}", 
                 file.getOriginalFilename(), fileType, file.getSize());
@@ -99,14 +104,20 @@ public class DocumentController {
             );
             
             ProcessDocumentOutput result = processDocumentUseCase.executeWithDocumentCreation(input, file.getOriginalFilename());
+            
+            // Registrar sucesso na observabilidade
+            long duration = System.currentTimeMillis() - startTime;
+            observabilityService.recordUploadSuccess(duration);
             logger.info("Document processed successfully: {}", documentId.value());
             
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
             
         } catch (IllegalArgumentException e) {
+            observabilityService.recordUploadFailure(e.getMessage());
             logger.warn("Invalid document upload: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
+            observabilityService.recordUploadFailure(e.getMessage());
             logger.error("Error processing document upload", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

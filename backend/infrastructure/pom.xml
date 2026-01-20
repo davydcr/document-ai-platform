@@ -151,6 +151,31 @@
       <artifactId>imgscalr-lib</artifactId>
       <version>4.2</version>
     </dependency>
+
+    <!-- ============================================================ -->
+    <!-- Logging & Observabilidade - Semana 4                        -->
+    <!-- ============================================================ -->
+    
+    <!-- Spring Boot Actuator for Metrics & Health Checks -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- Micrometer Registry for Prometheus -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <!-- Logback for structured logging (já incluído no Spring Boot) -->
+    <!-- Logstash JSON Encoder for structured logs -->
+    <dependency>
+      <groupId>net.logstash.logback</groupId>
+      <artifactId>logstash-logback-encoder</artifactId>
+      <version>7.4</version>
+    </dependency>
+
   </dependencies>
 
   <build>
