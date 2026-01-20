@@ -40,6 +40,26 @@ services:
       OLLAMA_NUM_GPU: 0  # Set to number of GPUs available, or 0 for CPU only
     command: serve
 
+  # RabbitMQ Message Broker (Semana 7 - Async Processing)
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: document-ai-rabbitmq
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - document-ai-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Document AI Platform Backend
   backend:
     build:
@@ -51,6 +71,8 @@ services:
         condition: service_healthy
       ollama:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/document_ai_platform
       SPRING_DATASOURCE_USERNAME: document_ai
@@ -60,6 +82,10 @@ services:
       APP_CLASSIFICATION_LLM_ENABLED: "true"
       APP_CLASSIFICATION_LLM_URL: http://ollama:11434
       APP_CLASSIFICATION_LLM_MODEL: mistral
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
     ports:
       - "8080:8080"
     volumes:
@@ -82,6 +108,8 @@ volumes:
   document_ai_temp:
     driver: local
   ollama_models:
+    driver: local
+  rabbitmq_data:
     driver: local
 
 networks:

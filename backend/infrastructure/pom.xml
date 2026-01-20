@@ -111,6 +111,12 @@
       <version>2.1.0</version>
     </dependency>
 
+    <!-- RabbitMQ for Async Processing (Semana 7) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-amqp</artifactId>
+    </dependency>
+
     <!-- Jackson for better JSON serialization in Swagger -->
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
