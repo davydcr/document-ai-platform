@@ -1,0 +1,142 @@
+name: 🚀 Deploy - Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: 'Docker image tag (e.g., v1.0.0, latest)'
+        required: true
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: https://${{ inputs.environment }}.example.com
+
+    steps:
+      - name: ✅ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📋 Display deployment info
+        run: |
+          echo "🚀 Deployment Information"
+          echo "========================="
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Image Tag: ${{ inputs.image_tag }}"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Repository: ${{ github.repository }}"
+
+      - name: 🔐 Configure AWS credentials (if using AWS)
+        if: secrets.AWS_ACCESS_KEY_ID != ''
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: ☸️ Deploy to Kubernetes (if configured)
+        if: secrets.KUBE_CONFIG != ''
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          
+          kubectl set image deployment/document-ai-backend \
+            app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }} \
+            -n document-ai \
+            --record
+          
+          kubectl rollout status deployment/document-ai-backend -n document-ai
+
+      - name: 🐳 Deploy with Docker Compose (local/staging)
+        if: inputs.environment == 'staging'
+        run: |
+          echo "Deploying ${{ inputs.image_tag }} to staging..."
+          
+          # Download and update docker-compose.yml
+          IMAGE_TAG=${{ inputs.image_tag }} docker-compose -f docker-compose.yml down
+          IMAGE_TAG=${{ inputs.image_tag }} docker-compose -f docker-compose.yml up -d
+          
+          echo "Waiting for services to be healthy..."
+          sleep 10
+          docker-compose ps
+
+      - name: ✅ Health Check
+        run: |
+          echo "Checking application health..."
+          max_attempts=30
+          attempt=0
+          
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -f -s http://localhost:8080/api/actuator/health > /dev/null; then
+              echo "✅ Application is healthy!"
+              exit 0
+            fi
+            attempt=$((attempt + 1))
+            echo "Attempt $attempt/$max_attempts - waiting for application..."
+            sleep 2
+          done
+          
+          echo "❌ Application health check failed!"
+          exit 1
+
+      - name: 📊 Post-deployment validation
+        if: success()
+        run: |
+          echo "📊 Deployment Validation"
+          echo "======================="
+          
+          # Check metrics endpoint
+          echo "Checking metrics..."
+          curl -s http://localhost:8080/api/actuator/metrics | jq '.names[]' | head -5
+          
+          # Check logs
+          echo "Recent logs:"
+          docker-compose logs --tail=10 backend
+
+      - name: 🔔 Deployment notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            🚀 Deployment ${{ job.status }}
+            Environment: ${{ inputs.environment }}
+            Image: ${{ inputs.image_tag }}
+            Triggered by: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK || '' }}
+
+      - name: 🎯 Create deployment record
+        if: success()
+        run: |
+          cat > deployment-record.txt << EOF
+          Deployment Record
+          =================
+          Date: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          Environment: ${{ inputs.environment }}
+          Image Tag: ${{ inputs.image_tag }}
+          Commit: ${{ github.sha }}
+          Actor: ${{ github.actor }}
+          Status: ✅ SUCCESS
+          EOF
+          
+          echo "Deployment record created:"
+          cat deployment-record.txt
