@@ -45,7 +45,7 @@ public class AuthControllerIntegrationTest {
 
         // Create test user
         testUser = new UserAccountEntity();
-        testUser.setId(UUID.randomUUID());
+        testUser.setId(UUID.randomUUID().toString());
         testUser.setEmail("test@example.com");
         testUser.setFirstName("Test");
         testUser.setLastName("User");

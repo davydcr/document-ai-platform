@@ -35,7 +35,7 @@ public class JwtProvider {
     /**
      * Gera um JWT token
      */
-    public String generateToken(UUID userId, String username, Set<String> roles) {
+    public String generateToken(String userId, String username, Set<String> roles) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs);
 

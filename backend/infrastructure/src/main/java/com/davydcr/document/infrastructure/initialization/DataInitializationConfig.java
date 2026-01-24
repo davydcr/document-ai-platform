@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -28,10 +29,18 @@ public class DataInitializationConfig {
                 return;
             }
 
-            // Criar roles
-            RoleEntity adminRole = roleRepository.save(new RoleEntity("ADMIN", "Administrator with full access"));
-            RoleEntity userRole = roleRepository.save(new RoleEntity("USER", "Standard user access"));
-            RoleEntity analystRole = roleRepository.save(new RoleEntity("ANALYST", "Data analyst access"));
+            // Criar roles se não existirem
+            RoleEntity adminRole = roleRepository.findByName("ADMIN")
+                    .orElseGet(() -> roleRepository.save(new RoleEntity("ADMIN", "Administrator with full access")));
+            RoleEntity userRole = roleRepository.findByName("USER")
+                    .orElseGet(() -> roleRepository.save(new RoleEntity("USER", "Standard user access")));
+            RoleEntity analystRole = roleRepository.findByName("ANALYST")
+                    .orElseGet(() -> roleRepository.save(new RoleEntity("ANALYST", "Data analyst access")));
+
+            // Recarregar roles para garantir que estão na sessão atual
+            adminRole = roleRepository.findByName("ADMIN").get();
+            userRole = roleRepository.findByName("USER").get();
+            analystRole = roleRepository.findByName("ANALYST").get();
 
             // Criar usuário admin
             UserAccountEntity admin = new UserAccountEntity();
@@ -40,7 +49,7 @@ public class DataInitializationConfig {
             admin.setLastName("User");
             admin.setPasswordHash(passwordEncoder.encode("admin123"));
             admin.setActive(true);
-            admin.setRoles(Set.of(adminRole, userRole));
+            admin.setRoles(new HashSet<>(Set.of(adminRole, userRole)));
             userRepository.save(admin);
 
             // Criar usuário padrão
@@ -50,7 +59,7 @@ public class DataInitializationConfig {
             standardUser.setLastName("Doe");
             standardUser.setPasswordHash(passwordEncoder.encode("user123"));
             standardUser.setActive(true);
-            standardUser.setRoles(Set.of(userRole));
+            standardUser.setRoles(new HashSet<>(Set.of(userRole)));
             userRepository.save(standardUser);
 
             // Criar usuário analista
@@ -60,7 +69,7 @@ public class DataInitializationConfig {
             analyst.setLastName("Smith");
             analyst.setPasswordHash(passwordEncoder.encode("analyst123"));
             analyst.setActive(true);
-            analyst.setRoles(Set.of(analystRole, userRole));
+            analyst.setRoles(new HashSet<>(Set.of(analystRole, userRole)));
             userRepository.save(analyst);
 
             System.out.println("✅ Dados de seed inicializados com sucesso!");

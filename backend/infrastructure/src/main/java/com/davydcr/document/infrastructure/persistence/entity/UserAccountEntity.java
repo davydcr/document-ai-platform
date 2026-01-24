@@ -16,8 +16,8 @@ import java.util.UUID;
 public class UserAccountEntity {
 
     @Id
-    @Column(name = "id", columnDefinition = "UUID")
-    private UUID id;
+    @Column(length = 36)
+    private String id;
 
     @Column(nullable = false, length = 255)
     private String email;
@@ -34,10 +34,10 @@ public class UserAccountEntity {
     @Column(nullable = false)
     private Boolean active = true;
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE})
     @JoinTable(
         name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id", columnDefinition = "UUID"),
+        joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<RoleEntity> roles = new HashSet<>();
@@ -53,7 +53,7 @@ public class UserAccountEntity {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         if (this.id == null) {
-            this.id = UUID.randomUUID();
+            this.id = UUID.randomUUID().toString();
         }
     }
 
@@ -63,11 +63,11 @@ public class UserAccountEntity {
     }
 
     // Getters and Setters
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 
