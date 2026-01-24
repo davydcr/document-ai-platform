@@ -85,6 +85,13 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Spring Security Crypto (BCrypt password hashing) -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+      <version>6.2.1</version>
+    </dependency>
+
     <!-- Testing -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
