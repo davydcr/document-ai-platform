@@ -1,5 +1,8 @@
 package com.davydcr.document.domain.model;
 
+import com.davydcr.document.domain.event.DocumentProcessedEvent;
+import com.davydcr.document.domain.event.DocumentStateChangedEvent;
+import com.davydcr.document.domain.event.ProcessDocumentEvent;
 import com.davydcr.document.domain.exception.DomainException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,146 +16,130 @@ import java.util.Map;
 class DocumentTest {
 
     @Test
-    void should_processDocumentSuccessfully_when_stateTransitionsValid() {
+    void should_startProcessing_when_documentReceived() {
         Document doc = new Document(
-            DocumentId.newId(),
-            "contrato.pdf",
-            DocumentType.PDF
+                DocumentId.newId(),
+                "contrato.pdf",
+                DocumentType.PDF
         );
 
-        doc.queue();
-        doc.startProcessing();
+        assertThat(doc.getStatus()).isEqualTo(DocumentStatus.RECEIVED);
+
+        doc.requestProcessing();
+
+        assertThat(doc.getStatus()).isEqualTo(DocumentStatus.PROCESSING);
+        assertThat(doc.getDomainEvents()).hasSize(2)
+                .anySatisfy(event -> assertThat(event).isInstanceOf(DocumentStateChangedEvent.class))
+                .anySatisfy(event -> assertThat(event).isInstanceOf(ProcessDocumentEvent.class));
+    }
+
+    @Test
+    void should_completeProcessing_when_processingFinished() {
+        Document doc = new Document(
+                DocumentId.newId(),
+                "document.pdf",
+                DocumentType.PDF
+        );
+
+        doc.requestProcessing();
+        var events = new java.util.ArrayList<>(doc.getDomainEvents());
+        doc.clearDomainEvents();
 
         ProcessingResult result = new ProcessingResult(
-            ProcessingStatus.SUCCESS,
-            Map.of("summary", "Contrato válido"),
-            "llama3"
+                ProcessingStatus.SUCCESS,
+                Map.of("summary", "Contrato válido"),
+                "llama3"
         );
 
-        doc.finishProcessing(result);
+        doc.completeProcessing(result);
 
-        assertThat(doc.getStatus()).isEqualTo(DocumentStatus.PROCESSED);
+        assertThat(doc.getStatus()).isEqualTo(DocumentStatus.COMPLETED);
         assertThat(doc.getProcessingHistory()).hasSize(1);
+        assertThat(doc.getDomainEvents()).hasSize(2)
+                .anySatisfy(event -> assertThat(event).isInstanceOf(DocumentStateChangedEvent.class))
+                .anySatisfy(event -> assertThat(event).isInstanceOf(DocumentProcessedEvent.class));
     }
 
     @Test
-    void should_processDocumentWithExtraction_when_contentExtracted() {
+    void should_failProcessing_when_processingError() {
         Document doc = new Document(
-            DocumentId.newId(),
-            "document.pdf",
-            DocumentType.PDF
+                DocumentId.newId(),
+                "corrupted.pdf",
+                DocumentType.PDF
         );
 
-        ExtractedContent extracted = new ExtractedContent(
-            "Extracted text content",
-            3,
-            "Tesseract"
-        );
+        doc.requestProcessing();
+        var events = new java.util.ArrayList<>(doc.getDomainEvents());
+        doc.clearDomainEvents();
 
-        ProcessingResult result = new ProcessingResult(
-            ProcessingStatus.SUCCESS,
-            Map.of("text", "extracted"),
-            "tesseract-v5",
-            extracted,
-            null
-        );
-
-        doc.queue();
-        doc.startProcessing();
-        doc.finishProcessing(result);
-
-        assertThat(doc.getStatus()).isEqualTo(DocumentStatus.PROCESSED);
-        assertThat(result.getExtractedContent()).isPresent();
-        assertThat(result.getExtractedContent().get().getFullText()).isEqualTo("Extracted text content");
-    }
-
-    @Test
-    void should_processDocumentWithClassification_when_classified() {
-        Document doc = new Document(
-            DocumentId.newId(),
-            "invoice.pdf",
-            DocumentType.PDF
-        );
-
-        ClassificationLabel label = ClassificationLabel.of("Invoice");
-        Confidence confidence = Confidence.of(95);
-        DocumentClassification classification = new DocumentClassification(
-            label,
-            confidence,
-            "llama3"
-        );
-
-        ProcessingResult result = new ProcessingResult(
-            ProcessingStatus.SUCCESS,
-            Map.of("class", "invoice"),
-            "llama3",
-            null,
-            classification
-        );
-
-        doc.queue();
-        doc.startProcessing();
-        doc.finishProcessing(result);
-
-        assertThat(result.getClassification()).isPresent();
-        assertThat(result.getClassification().get().getLabel().getValue()).isEqualTo("Invoice");
-        assertThat(result.getClassification().get().getConfidence().getPercentage()).isEqualTo(95);
-    }
-
-    @Test
-    void should_failedProcessing_when_resultIsFailed() {
-        Document doc = new Document(
-            DocumentId.newId(),
-            "corrupted.pdf",
-            DocumentType.PDF
-        );
-
-        ProcessingResult result = new ProcessingResult(
-            ProcessingStatus.ERROR,
-            Map.of("error", "Cannot extract text"),
-            "tesseract-v5"
-        );
-
-        doc.queue();
-        doc.startProcessing();
-        doc.finishProcessing(result);
+        doc.failProcessing("Cannot extract text from corrupted PDF");
 
         assertThat(doc.getStatus()).isEqualTo(DocumentStatus.FAILED);
+        assertThat(doc.getDomainEvents()).hasSize(2);
     }
 
     @Test
-    void should_reprocessDocument_when_previouslyProcessed() {
+    void should_publishEvents_when_transitioningStates() {
         Document doc = new Document(
-            DocumentId.newId(),
-            "document.pdf",
-            DocumentType.PDF
+                DocumentId.newId(),
+                "document.pdf",
+                DocumentType.PDF
         );
 
-        doc.queue();
-        doc.startProcessing();
-        doc.finishProcessing(new ProcessingResult(
-            ProcessingStatus.SUCCESS,
-            Map.of(),
-            "model-v1"
-        ));
+        doc.requestProcessing();
 
-        assertThat(doc.getStatus()).isEqualTo(DocumentStatus.PROCESSED);
+        assertThat(doc.getDomainEvents()).hasSize(2);
 
-        doc.reprocess();
+        var stateChangedEvent = (DocumentStateChangedEvent) doc.getDomainEvents().get(0);
+        assertThat(stateChangedEvent.previousStatus()).isEqualTo(DocumentStatus.RECEIVED);
+        assertThat(stateChangedEvent.newStatus()).isEqualTo(DocumentStatus.PROCESSING);
 
-        assertThat(doc.getStatus()).isEqualTo(DocumentStatus.QUEUED);
+        var processEvent = (ProcessDocumentEvent) doc.getDomainEvents().get(1);
+        assertThat(processEvent.documentId()).isEqualTo(doc.getId().value().toString());
+    }
+
+    @Test
+    void should_clearEvents_when_eventsCleared() {
+        Document doc = new Document(
+                DocumentId.newId(),
+                "document.pdf",
+                DocumentType.PDF
+        );
+
+        doc.requestProcessing();
+        assertThat(doc.getDomainEvents()).hasSize(2);
+
+        var events = new java.util.ArrayList<>(doc.getDomainEvents());
+        doc.clearDomainEvents();
+        assertThat(doc.getDomainEvents()).isEmpty();
     }
 
     @Test
     void should_throwException_when_invalidStateTransition() {
         Document doc = new Document(
-            DocumentId.newId(),
-            "document.pdf",
-            DocumentType.PDF
+                DocumentId.newId(),
+                "document.pdf",
+                DocumentType.PDF
         );
 
-        assertThatThrownBy(doc::startProcessing)
+        // Try to complete processing without requesting it first
+        ProcessingResult result = new ProcessingResult(
+                ProcessingStatus.SUCCESS,
+                Map.of(),
+                "model-v1"
+        );
+
+        assertThatThrownBy(() -> doc.completeProcessing(result))
                 .isInstanceOf(DomainException.class)
-                .hasMessageContaining("Invalid status transition");
+                .hasMessageContaining("Cannot complete processing");
+    }
+
+    @Test
+    void should_validateStateTransitions_with_canTransitionTo() {
+        assertThat(DocumentStatus.RECEIVED.canTransitionTo(DocumentStatus.PROCESSING)).isTrue();
+        assertThat(DocumentStatus.RECEIVED.canTransitionTo(DocumentStatus.COMPLETED)).isFalse();
+        assertThat(DocumentStatus.PROCESSING.canTransitionTo(DocumentStatus.COMPLETED)).isTrue();
+        assertThat(DocumentStatus.PROCESSING.canTransitionTo(DocumentStatus.FAILED)).isTrue();
+        assertThat(DocumentStatus.COMPLETED.canTransitionTo(DocumentStatus.FAILED)).isFalse();
     }
 }

@@ -100,8 +100,7 @@ public class ProcessDocumentUseCase {
     private ProcessDocumentOutput processDocument(ProcessDocumentInput input, Document document) {
         try {
             // Transição de estado
-            document.queue();
-            document.startProcessing();
+            document.requestProcessing();
 
             // Extrair conteúdo via OCR
             ExtractedContent extractedContent = performOcr(input.getFilePath(), input.getFileType());
@@ -123,7 +122,7 @@ public class ProcessDocumentUseCase {
             );
 
             // Finalizar processamento no domínio
-            document.finishProcessing(result);
+            document.completeProcessing(result);
 
             // Persistir documento atualizado
             documentRepository.save(document);

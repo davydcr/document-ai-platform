@@ -30,12 +30,8 @@ public class ExtractDocumentContentUseCase {
                 .orElseThrow(() -> new DomainException("Document not found: " + command.getDocumentId()) {});
 
         try {
-            // Fila o documento se ainda não está processando
-            if (document.getStatus().toString().equals("UPLOADED")) {
-                document.queue();
-            }
-
-            document.startProcessing();
+            // Solicita processamento
+            document.requestProcessing();
 
             // Nota: Em produção, aqui seria feito o carregamento do arquivo real
             // Por enquanto, criamos um ExtractedContent simulado
@@ -58,7 +54,7 @@ public class ExtractDocumentContentUseCase {
                     null
             );
 
-            document.finishProcessing(result);
+            document.completeProcessing(result);
             documentRepository.save(document);
 
             return new ExtractDocumentContentResult(
@@ -69,14 +65,13 @@ public class ExtractDocumentContentUseCase {
             );
 
         } catch (Exception e) {
-            document.startProcessing();
-            ProcessingResult errorResult = new ProcessingResult(
-                    ProcessingStatus.ERROR,
-                    Map.of("error", e.getMessage()),
-                    command.getOcrEngine()
-            );
-            document.finishProcessing(errorResult);
-            documentRepository.save(document);
+            try {
+                document.requestProcessing();
+                document.failProcessing(e.getMessage());
+                documentRepository.save(document);
+            } catch (Exception ex) {
+                // Silenciar exceção na falha
+            }
 
             throw new DomainException("Failed to extract content from document: " + e.getMessage()) {};
         }

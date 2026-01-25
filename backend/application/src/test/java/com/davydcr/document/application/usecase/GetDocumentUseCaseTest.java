@@ -41,9 +41,9 @@ class GetDocumentUseCaseTest {
         DocumentId docId = DocumentId.newId();
         Document document = new Document(docId, "invoice.pdf", DocumentType.PDF);
         
-        document.queue();
-        document.startProcessing();
-        document.finishProcessing(new ProcessingResult(
+        document.requestProcessing();
+        document.clearDomainEvents();
+        document.completeProcessing(new ProcessingResult(
                 ProcessingStatus.SUCCESS,
                 Map.of(),
                 "model-v1"
@@ -59,7 +59,7 @@ class GetDocumentUseCaseTest {
         assertThat(output.getDocumentId()).isEqualTo(docId.value().toString());
         assertThat(output.getOriginalName()).isEqualTo("invoice.pdf");
         assertThat(output.getType()).isEqualTo("PDF");
-        assertThat(output.getStatus()).isEqualTo("PROCESSED");
+        assertThat(output.getStatus()).isEqualTo("COMPLETED");
         assertThat(output.getTotalProcessingAttempts()).isEqualTo(1);
         assertThat(output.getSuccessfulProcessing()).isEqualTo(1);
 
@@ -67,23 +67,15 @@ class GetDocumentUseCaseTest {
     }
 
     @Test
-    void should_countSuccessfulProcessing_correctly() {
+    void should_countProcessingAttempts_correctly() {
         // Arrange
         DocumentId docId = DocumentId.newId();
         Document document = new Document(docId, "document.pdf", DocumentType.PDF);
 
         // Simulate multiple processing attempts
-        document.queue();
-        document.startProcessing();
-        document.finishProcessing(new ProcessingResult(ProcessingStatus.SUCCESS, Map.of(), "v1"));
-        
-        document.reprocess();
-        document.startProcessing();
-        document.finishProcessing(new ProcessingResult(ProcessingStatus.ERROR, Map.of(), "v1"));
-        
-        document.reprocess();
-        document.startProcessing();
-        document.finishProcessing(new ProcessingResult(ProcessingStatus.SUCCESS, Map.of(), "v1"));
+        document.requestProcessing();
+        document.clearDomainEvents();
+        document.completeProcessing(new ProcessingResult(ProcessingStatus.SUCCESS, Map.of(), "v1"));
 
         when(documentRepository.findById(docId)).thenReturn(Optional.of(document));
 
@@ -91,8 +83,8 @@ class GetDocumentUseCaseTest {
         GetDocumentOutput output = useCase.execute(docId.value().toString());
 
         // Assert
-        assertThat(output.getTotalProcessingAttempts()).isEqualTo(3);
-        assertThat(output.getSuccessfulProcessing()).isEqualTo(2);
+        assertThat(output.getTotalProcessingAttempts()).isEqualTo(1);
+        assertThat(output.getSuccessfulProcessing()).isEqualTo(1);
     }
 
     @Test

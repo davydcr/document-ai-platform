@@ -40,7 +40,6 @@ class ExtractDocumentContentUseCaseTest {
     void should_extractContentSuccessfully_when_validCommandProvided() {
         DocumentId documentId = DocumentId.newId();
         Document document = new Document(documentId, "test.pdf", DocumentType.PDF);
-        document.queue();
 
         ExtractDocumentContentCommand command = new ExtractDocumentContentCommand(
                 documentId,
@@ -89,7 +88,6 @@ class ExtractDocumentContentUseCaseTest {
     void should_saveDocumentWithExtractedContent_when_successfulExtraction() {
         DocumentId documentId = DocumentId.newId();
         Document document = new Document(documentId, "test.pdf", DocumentType.PDF);
-        document.queue();
 
         ExtractDocumentContentCommand command = new ExtractDocumentContentCommand(
                 documentId,
@@ -109,7 +107,6 @@ class ExtractDocumentContentUseCaseTest {
     void should_supportDifferentOcrEngines() {
         DocumentId documentId = DocumentId.newId();
         Document document = new Document(documentId, "test.pdf", DocumentType.PDF);
-        document.queue();
 
         ExtractDocumentContentCommand command = new ExtractDocumentContentCommand(
                 documentId,
@@ -126,10 +123,10 @@ class ExtractDocumentContentUseCaseTest {
     }
 
     @Test
-    void should_queueUploadedDocument_when_executingExtraction() {
+    void should_createReceivedDocument_when_executingExtraction() {
         DocumentId documentId = DocumentId.newId();
         Document document = new Document(documentId, "test.pdf", DocumentType.PDF);
-        // Documento é criado em estado UPLOADED
+        // Documento é criado em estado RECEIVED
 
         ExtractDocumentContentCommand command = new ExtractDocumentContentCommand(
                 documentId,
