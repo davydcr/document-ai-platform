@@ -36,6 +36,7 @@ public class RabbitMQConfig {
     public static final String DOCUMENT_PROCESSING_QUEUE = "document.processing.queue";
     public static final String DOCUMENT_STATE_CHANGED_QUEUE = "document.state-changed.queue";
     public static final String DOCUMENT_PROCESSED_QUEUE = "document.processed.queue";
+    public static final String WEBHOOK_EVENTS_QUEUE = "webhook-events-queue";
 
     // Routing keys
     public static final String DOCUMENT_PROCESS_ROUTING_KEY = "document.process";
@@ -118,6 +119,20 @@ public class RabbitMQConfig {
     }
 
     /**
+     * Fila para eventos de webhooks
+     */
+    @Bean
+    public Queue webhookEventsQueue() {
+        logger.info("Creating webhook events queue: {}", WEBHOOK_EVENTS_QUEUE);
+        return new Queue(
+            WEBHOOK_EVENTS_QUEUE,
+            true,  // durable
+            false, // exclusive
+            false  // autoDelete
+        );
+    }
+
+    /**
      * Binding entre a fila de processamento e o exchange
      */
     @Bean
@@ -171,6 +186,20 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(documentProcessingQueue)
                 .to(documentEventExchange)
                 .with(DOCUMENT_PROCESS_ROUTING_KEY);
+    }
+
+    /**
+     * Binding para eventos de webhooks
+     */
+    @Bean
+    public Binding webhookEventsBinding(
+            Queue webhookEventsQueue,
+            DirectExchange documentEventExchange) {
+        logger.info("Creating binding: {} -> {} (routing key: #)",
+                WEBHOOK_EVENTS_QUEUE, DOCUMENT_EVENT_EXCHANGE);
+        return BindingBuilder.bind(webhookEventsQueue)
+                .to(documentEventExchange)
+                .with("#");  // Catch all events
     }
 
     /**

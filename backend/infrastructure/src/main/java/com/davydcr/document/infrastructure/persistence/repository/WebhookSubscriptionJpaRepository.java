@@ -15,9 +15,8 @@ public interface WebhookSubscriptionJpaRepository extends JpaRepository<WebhookS
 
     List<WebhookSubscriptionEntity> findByUserId(String userId);
 
-    @Query("SELECT w FROM WebhookSubscriptionEntity w WHERE w.userId = :userId AND w.active = true AND w.eventTypes LIKE %:eventType%")
+    @Query("SELECT w FROM WebhookSubscriptionEntity w WHERE w.active = true AND w.eventTypes LIKE %:eventType%")
     List<WebhookSubscriptionEntity> findActiveWebhooksForEvent(
-            @Param("userId") String userId,
             @Param("eventType") String eventType
     );
 

@@ -14,8 +14,8 @@ public interface WebhookDeliveryAttemptJpaRepository extends JpaRepository<Webho
 
     List<WebhookDeliveryAttemptEntity> findByWebhookSubscriptionId(String webhookSubscriptionId);
 
-    @Query(value = "SELECT a FROM WebhookDeliveryAttemptEntity a WHERE a.webhookSubscriptionId = :webhookId AND a.success = false ORDER BY a.attemptedAt DESC LIMIT 1")
-    WebhookDeliveryAttemptEntity findLastFailedAttempt(@Param("webhookId") String webhookId);
+    @Query(value = "SELECT a FROM WebhookDeliveryAttemptEntity a WHERE a.webhookSubscriptionId = :webhookId AND a.eventType = :eventType AND a.success = false ORDER BY a.attemptedAt DESC LIMIT 1")
+    java.util.Optional<WebhookDeliveryAttemptEntity> findLastFailedAttempt(@Param("webhookId") String webhookId, @Param("eventType") String eventType);
 
     List<WebhookDeliveryAttemptEntity> findBySuccessFalseAndNextRetryAtIsNotNullAndNextRetryAtLessThanEqual(Instant now);
 

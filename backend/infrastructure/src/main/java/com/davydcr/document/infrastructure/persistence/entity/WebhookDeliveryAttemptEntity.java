@@ -124,6 +124,14 @@ public class WebhookDeliveryAttemptEntity {
         this.errorMessage = errorMessage;
     }
 
+    public void setAttemptedAt(Instant attemptedAt) {
+        this.attemptedAt = attemptedAt;
+    }
+
+    public boolean isSuccess() {
+        return success != null && success;
+    }
+
     public void incrementAttemptNumber() {
         this.attemptNumber = (attemptNumber == null ? 1 : attemptNumber) + 1;
     }
