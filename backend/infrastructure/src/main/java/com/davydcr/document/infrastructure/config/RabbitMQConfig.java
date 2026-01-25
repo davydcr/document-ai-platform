@@ -30,12 +30,17 @@ public class RabbitMQConfig {
 
     // Exchange names
     public static final String DOCUMENT_EXCHANGE = "document.exchange";
+    public static final String DOCUMENT_EVENT_EXCHANGE = "document-exchange";
 
     // Queue names
     public static final String DOCUMENT_PROCESSING_QUEUE = "document.processing.queue";
+    public static final String DOCUMENT_STATE_CHANGED_QUEUE = "document.state-changed.queue";
+    public static final String DOCUMENT_PROCESSED_QUEUE = "document.processed.queue";
 
     // Routing keys
     public static final String DOCUMENT_PROCESS_ROUTING_KEY = "document.process";
+    public static final String DOCUMENT_STATE_CHANGED_ROUTING_KEY = "document.state-changed";
+    public static final String DOCUMENT_PROCESSED_ROUTING_KEY = "document.processed";
 
     // Message TTL (5 minutes)
     private static final int MESSAGE_TTL = 300000;
@@ -72,6 +77,47 @@ public class RabbitMQConfig {
     }
 
     /**
+     * Define o exchange direto para eventos de domínio
+     */
+    @Bean
+    public DirectExchange documentEventExchange() {
+        logger.info("Creating direct exchange: {}", DOCUMENT_EVENT_EXCHANGE);
+        return new DirectExchange(
+            DOCUMENT_EVENT_EXCHANGE,
+            true,   // durable
+            false   // autoDelete
+        );
+    }
+
+    /**
+     * Fila para eventos de mudança de estado
+     */
+    @Bean
+    public Queue documentStateChangedQueue() {
+        logger.info("Creating state changed queue: {}", DOCUMENT_STATE_CHANGED_QUEUE);
+        return new Queue(
+            DOCUMENT_STATE_CHANGED_QUEUE,
+            true,  // durable
+            false, // exclusive
+            false  // autoDelete
+        );
+    }
+
+    /**
+     * Fila para eventos de processamento completado
+     */
+    @Bean
+    public Queue documentProcessedQueue() {
+        logger.info("Creating processed queue: {}", DOCUMENT_PROCESSED_QUEUE);
+        return new Queue(
+            DOCUMENT_PROCESSED_QUEUE,
+            true,  // durable
+            false, // exclusive
+            false  // autoDelete
+        );
+    }
+
+    /**
      * Binding entre a fila de processamento e o exchange
      */
     @Bean
@@ -82,6 +128,48 @@ public class RabbitMQConfig {
                 DOCUMENT_PROCESSING_QUEUE, DOCUMENT_EXCHANGE, DOCUMENT_PROCESS_ROUTING_KEY);
         return BindingBuilder.bind(documentProcessingQueue)
                 .to(documentExchange)
+                .with(DOCUMENT_PROCESS_ROUTING_KEY);
+    }
+
+    /**
+     * Binding para eventos de mudança de estado
+     */
+    @Bean
+    public Binding documentStateChangedBinding(
+            Queue documentStateChangedQueue,
+            DirectExchange documentEventExchange) {
+        logger.info("Creating binding: {} -> {} (routing key: {})",
+                DOCUMENT_STATE_CHANGED_QUEUE, DOCUMENT_EVENT_EXCHANGE, DOCUMENT_STATE_CHANGED_ROUTING_KEY);
+        return BindingBuilder.bind(documentStateChangedQueue)
+                .to(documentEventExchange)
+                .with(DOCUMENT_STATE_CHANGED_ROUTING_KEY);
+    }
+
+    /**
+     * Binding para eventos de processamento completado
+     */
+    @Bean
+    public Binding documentProcessedBinding(
+            Queue documentProcessedQueue,
+            DirectExchange documentEventExchange) {
+        logger.info("Creating binding: {} -> {} (routing key: {})",
+                DOCUMENT_PROCESSED_QUEUE, DOCUMENT_EVENT_EXCHANGE, DOCUMENT_PROCESSED_ROUTING_KEY);
+        return BindingBuilder.bind(documentProcessedQueue)
+                .to(documentEventExchange)
+                .with(DOCUMENT_PROCESSED_ROUTING_KEY);
+    }
+
+    /**
+     * Binding para eventos de processamento iniciado
+     */
+    @Bean
+    public Binding documentProcessBinding(
+            Queue documentProcessingQueue,
+            DirectExchange documentEventExchange) {
+        logger.info("Creating binding: {} -> {} (routing key: {})",
+                DOCUMENT_PROCESSING_QUEUE, DOCUMENT_EVENT_EXCHANGE, DOCUMENT_PROCESS_ROUTING_KEY);
+        return BindingBuilder.bind(documentProcessingQueue)
+                .to(documentEventExchange)
                 .with(DOCUMENT_PROCESS_ROUTING_KEY);
     }
 
