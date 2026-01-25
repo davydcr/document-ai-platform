@@ -23,14 +23,17 @@ public class ProcessWebhookEventHandler {
 
     private final WebhookSubscriptionJpaRepository webhookRepository;
     private final WebhookDeliveryService webhookDeliveryService;
+    private final DocumentWebSocketService documentWebSocketService;
     private final ObjectMapper objectMapper;
 
     public ProcessWebhookEventHandler(
             WebhookSubscriptionJpaRepository webhookRepository,
             WebhookDeliveryService webhookDeliveryService,
+            DocumentWebSocketService documentWebSocketService,
             ObjectMapper objectMapper) {
         this.webhookRepository = webhookRepository;
         this.webhookDeliveryService = webhookDeliveryService;
+        this.documentWebSocketService = documentWebSocketService;
         this.objectMapper = objectMapper;
     }
 
@@ -65,6 +68,10 @@ public class ProcessWebhookEventHandler {
                     logger.error("Error processing webhook: webhookId={}, eventType={}", webhook.getId(), eventType, e);
                 }
             });
+
+            // Broadcast do evento via WebSocket para atualizações em tempo real
+            String status = (String) eventData.get("status");
+            documentWebSocketService.broadcastDocumentStatusChange(documentId, status, eventType);
 
         } catch (Exception e) {
             logger.error("Error handling webhook event", e);
