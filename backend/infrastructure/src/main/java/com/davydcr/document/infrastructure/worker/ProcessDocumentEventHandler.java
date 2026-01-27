@@ -9,6 +9,7 @@ import com.davydcr.document.domain.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -24,6 +25,11 @@ import java.util.Objects;
  * 4. Publicação de eventos de conclusão
  */
 @Service
+@ConditionalOnProperty(
+    name = "app.async.processing-enabled",
+    havingValue = "true",
+    matchIfMissing = false
+)
 public class ProcessDocumentEventHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ProcessDocumentEventHandler.class);

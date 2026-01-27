@@ -21,9 +21,4 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentJpaEntity, 
     Page<DocumentJpaEntity> findByUserIdAndType(String userId, String type, Pageable pageable);
 
     Page<DocumentJpaEntity> findByUserIdAndStatusAndType(String userId, String status, String type, Pageable pageable);
-
-    // Para filtro por tipo de documento
-    Page<DocumentJpaEntity> findByUserIdAndDocumentType(String userId, String documentType, Pageable pageable);
-
-    Page<DocumentJpaEntity> findByUserIdAndStatusAndDocumentType(String userId, String status, String documentType, Pageable pageable);
 }

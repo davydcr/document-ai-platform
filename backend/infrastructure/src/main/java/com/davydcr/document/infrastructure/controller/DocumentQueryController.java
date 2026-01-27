@@ -76,12 +76,12 @@ public class DocumentQueryController {
         // Buscar documentos baseado nos filtros
         Page<DocumentJpaEntity> documents;
         if (status != null && type != null) {
-            documents = documentRepository.findByUserIdAndStatusAndDocumentType(
+            documents = documentRepository.findByUserIdAndStatusAndType(
                     userId, status, type, pageable);
         } else if (status != null) {
             documents = documentRepository.findByUserIdAndStatus(userId, status, pageable);
         } else if (type != null) {
-            documents = documentRepository.findByUserIdAndDocumentType(userId, type, pageable);
+            documents = documentRepository.findByUserIdAndType(userId, type, pageable);
         } else {
             documents = documentRepository.findByUserId(userId, pageable);
         }

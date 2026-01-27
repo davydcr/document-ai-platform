@@ -4,7 +4,7 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -16,6 +16,12 @@ spring:
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
+
+  rabbitmq:
+    listener:
+      simple:
+        prefetch: 1
+        acknowledge-mode: MANUAL
 
 server:
   port: 8080
@@ -35,3 +41,5 @@ app:
   ai:
     model: llama3
     baseUrl: http://localhost:11434
+  async:
+    processing-enabled: false

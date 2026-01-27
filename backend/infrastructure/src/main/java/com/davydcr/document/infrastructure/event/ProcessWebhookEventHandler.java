@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -17,6 +18,11 @@ import java.util.Map;
  * Consome eventos da fila "webhook-events-queue" e triga callbacks registrados.
  */
 @Component
+@ConditionalOnProperty(
+    name = "app.async.processing-enabled",
+    havingValue = "true",
+    matchIfMissing = false
+)
 public class ProcessWebhookEventHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ProcessWebhookEventHandler.class);
