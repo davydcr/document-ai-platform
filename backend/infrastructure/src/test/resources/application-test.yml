@@ -6,14 +6,26 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: true
+
   datasource:
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: false
+
   test:
     database:
       replace: any
+
   flyway:
     enabled: false
+
   servlet:
     multipart:
       max-file-size: 50MB
@@ -24,6 +36,7 @@ logging:
     root: INFO
     com.davydcr.document: DEBUG
     org.flywaydb: INFO
+    org.springframework.test: DEBUG
 
 app:
   document:
@@ -33,4 +46,5 @@ app:
     temp-dir: /tmp/test-document-ai/temp
     tessdata-path: ""
     languages: por+eng
-
+  async:
+    processing-enabled: false
