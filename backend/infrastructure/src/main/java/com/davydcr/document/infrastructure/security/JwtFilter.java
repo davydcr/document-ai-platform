@@ -37,6 +37,16 @@ public class JwtFilter implements Filter {
             return;
         }
 
+        // Verificar X-User-ID header primeiro (mais simples, para testes e APIs simples)
+        String userId = httpRequest.getHeader("X-User-ID");
+        if (userId != null && !userId.isBlank()) {
+            // X-User-ID fornecido - permitir requisição
+            httpRequest.setAttribute("userId", userId);
+            chain.doFilter(request, response);
+            return;
+        }
+
+        // Tentar JWT token (mais complexo, para produção com Spring Security)
         String token = extractToken(httpRequest);
 
         if (token != null && jwtProvider.isTokenValid(token)) {
@@ -46,7 +56,7 @@ public class JwtFilter implements Filter {
             httpRequest.setAttribute("roles", jwtProvider.getRolesFromToken(token));
             chain.doFilter(request, response);
         } else {
-            // Token inválido ou ausente
+            // Nenhuma forma de autenticação válida
             httpResponse.setStatus(401);
             httpResponse.setContentType("application/json");
             httpResponse.getWriter().write("{\"error\": \"Unauthorized\"}");

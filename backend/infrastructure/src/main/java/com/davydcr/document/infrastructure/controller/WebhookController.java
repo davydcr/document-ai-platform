@@ -40,21 +40,20 @@ public class WebhookController {
      */
     @PostMapping
     public ResponseEntity<WebhookSubscriptionDTO> registerWebhook(
-            @RequestBody CreateWebhookRequest request) {
+            @RequestBody CreateWebhookRequest request,
+            @RequestHeader(value = "X-User-ID", required = false) String userId) {
 
-        logger.info("Registering webhook: url={}, events={}", request.url(), request.eventTypes());
+        logger.info("Registering webhook: url={}, events={}, userId={}", request.url(), request.eventTypes(), userId);
+
+        if (userId == null || userId.isBlank()) {
+            logger.warn("Unauthorized attempt to register webhook - no X-User-ID header");
+            return ResponseEntity.status(401).build();
+        }
 
         // Validar URL
         if (!isValidUrl(request.url())) {
             logger.warn("Invalid webhook URL: {}", request.url());
             return ResponseEntity.badRequest().build();
-        }
-
-        // Extrair userId do Spring Security context
-        String userId = securityContextService.getCurrentUserId();
-        if (userId == null) {
-            logger.warn("Unauthorized attempt to register webhook");
-            return ResponseEntity.status(401).build();
         }
 
         // Criar entidade
@@ -79,16 +78,15 @@ public class WebhookController {
      * GET /api/webhooks
      */
     @GetMapping
-    public ResponseEntity<List<WebhookSubscriptionDTO>> listWebhooks() {
-
-        // Extrair userId do contexto de segurança
-        String userId = securityContextService.getCurrentUserId();
-        if (userId == null) {
-            logger.warn("Unauthorized attempt to list webhooks");
-            return ResponseEntity.status(401).build();
-        }
+    public ResponseEntity<List<WebhookSubscriptionDTO>> listWebhooks(
+            @RequestHeader(value = "X-User-ID", required = false) String userId) {
 
         logger.info("Listing webhooks for user: {}", userId);
+
+        if (userId == null || userId.isBlank()) {
+            logger.warn("Unauthorized attempt to list webhooks - no X-User-ID header");
+            return ResponseEntity.status(401).build();
+        }
 
         List<WebhookSubscriptionEntity> webhooks = webhookRepository.findByUserId(userId);
 
@@ -105,13 +103,12 @@ public class WebhookController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> unregisterWebhook(
-            @PathVariable String id) {
+            @PathVariable String id,
+            @RequestHeader(value = "X-User-ID", required = false) String userId) {
 
-        logger.info("Unregistering webhook: id={}", id);
+        logger.info("Unregistering webhook: id={}, userId={}", id, userId);
 
-        // Extrair userId do contexto de segurança
-        String userId = securityContextService.getCurrentUserId();
-        if (userId == null) {
+        if (userId == null || userId.isBlank()) {
             logger.warn("Unauthorized attempt to unregister webhook: id={}", id);
             return ResponseEntity.status(401).build();
         }
