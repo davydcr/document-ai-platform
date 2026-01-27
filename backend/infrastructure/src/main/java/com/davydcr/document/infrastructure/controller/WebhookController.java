@@ -4,6 +4,7 @@ import com.davydcr.document.infrastructure.controller.dto.CreateWebhookRequest;
 import com.davydcr.document.infrastructure.controller.dto.WebhookSubscriptionDTO;
 import com.davydcr.document.infrastructure.persistence.entity.WebhookSubscriptionEntity;
 import com.davydcr.document.infrastructure.persistence.repository.WebhookSubscriptionJpaRepository;
+import com.davydcr.document.infrastructure.security.SecurityContextService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -25,9 +26,12 @@ public class WebhookController {
     private static final Logger logger = LoggerFactory.getLogger(WebhookController.class);
 
     private final WebhookSubscriptionJpaRepository webhookRepository;
+    private final SecurityContextService securityContextService;
 
-    public WebhookController(WebhookSubscriptionJpaRepository webhookRepository) {
+    public WebhookController(WebhookSubscriptionJpaRepository webhookRepository,
+                           SecurityContextService securityContextService) {
         this.webhookRepository = Objects.requireNonNull(webhookRepository);
+        this.securityContextService = Objects.requireNonNull(securityContextService);
     }
 
     /**
@@ -46,8 +50,12 @@ public class WebhookController {
             return ResponseEntity.badRequest().build();
         }
 
-        // Obter userId do header (para teste) ou contexto
-        String userId = "user-123"; // TODO: extrair do contexto de segurança
+        // Extrair userId do Spring Security context
+        String userId = securityContextService.getCurrentUserId();
+        if (userId == null) {
+            logger.warn("Unauthorized attempt to register webhook");
+            return ResponseEntity.status(401).build();
+        }
 
         // Criar entidade
         WebhookSubscriptionEntity webhook = new WebhookSubscriptionEntity(
@@ -73,8 +81,12 @@ public class WebhookController {
     @GetMapping
     public ResponseEntity<List<WebhookSubscriptionDTO>> listWebhooks() {
 
-        // TODO: extrair userId do contexto de segurança
-        String userId = "user-123";
+        // Extrair userId do contexto de segurança
+        String userId = securityContextService.getCurrentUserId();
+        if (userId == null) {
+            logger.warn("Unauthorized attempt to list webhooks");
+            return ResponseEntity.status(401).build();
+        }
 
         logger.info("Listing webhooks for user: {}", userId);
 
@@ -97,8 +109,12 @@ public class WebhookController {
 
         logger.info("Unregistering webhook: id={}", id);
 
-        // TODO: extrair userId do contexto de segurança
-        String userId = "user-123";
+        // Extrair userId do contexto de segurança
+        String userId = securityContextService.getCurrentUserId();
+        if (userId == null) {
+            logger.warn("Unauthorized attempt to unregister webhook: id={}", id);
+            return ResponseEntity.status(401).build();
+        }
 
         // Verificar se webhook existe e pertence ao usuário
         WebhookSubscriptionEntity webhook = webhookRepository.findById(id)
@@ -132,7 +148,7 @@ public class WebhookController {
     }
 
     /**
-     * Valida se uma URL é válida.
+     * Valida URL de webhook.
      */
     private boolean isValidUrl(String url) {
         try {

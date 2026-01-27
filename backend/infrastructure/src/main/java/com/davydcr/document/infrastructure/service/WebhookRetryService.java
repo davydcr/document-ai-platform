@@ -103,15 +103,30 @@ public class WebhookRetryService {
     /**
      * Limpa tentativas antigas e bem-sucedidas.
      * Executado diariamente às 2:00 AM.
+     * Remove tentativas bem-sucedidas com mais de 30 dias.
      */
     @Scheduled(cron = "0 0 2 * * ?")  // 2:00 AM daily
     public void cleanupOldSuccessfulAttempts() {
         try {
             logger.info("Starting cleanup of old successful webhook attempts");
 
-            // TODO: Implementar limpeza de tentativas bem-sucedidas com mais de 30 dias
+            // Calcular a data limite: 30 dias atrás
+            Instant thirtyDaysAgo = Instant.now().minus(java.time.Duration.ofDays(30));
 
-            logger.info("Completed cleanup of old successful webhook attempts");
+            // Buscar tentativas bem-sucedidas com mais de 30 dias
+            List<WebhookDeliveryAttemptEntity> oldSuccessfulAttempts = 
+                    deliveryAttemptRepository.findOldSuccessfulAttempts(thirtyDaysAgo);
+
+            if (!oldSuccessfulAttempts.isEmpty()) {
+                logger.info("Found {} old successful webhook attempts to delete", oldSuccessfulAttempts.size());
+                
+                // Deletar as tentativas antigas
+                deliveryAttemptRepository.deleteAll(oldSuccessfulAttempts);
+                
+                logger.info("Successfully deleted {} old webhook attempts", oldSuccessfulAttempts.size());
+            } else {
+                logger.info("No old successful webhook attempts to delete");
+            }
 
         } catch (Exception e) {
             logger.error("Error in webhook cleanup scheduled task", e);

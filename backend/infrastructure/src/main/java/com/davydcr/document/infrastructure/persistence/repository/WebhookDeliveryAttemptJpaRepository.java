@@ -23,4 +23,10 @@ public interface WebhookDeliveryAttemptJpaRepository extends JpaRepository<Webho
 
     @Query("SELECT COUNT(a) FROM WebhookDeliveryAttemptEntity a WHERE a.webhookSubscriptionId = :webhookId AND a.attemptedAt >= :since AND a.success = false")
     long countFailedAttemptsSince(@Param("webhookId") String webhookId, @Param("since") Instant since);
-}
+
+    /**
+     * Busca tentativas bem-sucedidas anterior a uma data específica.
+     * Utilizada para limpeza de dados antigos.
+     */
+    @Query("SELECT a FROM WebhookDeliveryAttemptEntity a WHERE a.success = true AND a.attemptedAt < :beforeDate")
+    List<WebhookDeliveryAttemptEntity> findOldSuccessfulAttempts(@Param("beforeDate") Instant beforeDate);}

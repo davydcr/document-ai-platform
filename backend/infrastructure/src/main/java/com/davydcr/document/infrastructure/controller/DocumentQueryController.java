@@ -3,6 +3,7 @@ package com.davydcr.document.infrastructure.controller;
 import com.davydcr.document.infrastructure.controller.dto.DocumentDTO;
 import com.davydcr.document.infrastructure.persistence.DocumentJpaEntity;
 import com.davydcr.document.infrastructure.persistence.DocumentJpaRepository;
+import com.davydcr.document.infrastructure.security.SecurityContextService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -25,9 +26,12 @@ public class DocumentQueryController {
     private static final Logger logger = LoggerFactory.getLogger(DocumentQueryController.class);
 
     private final DocumentJpaRepository documentRepository;
+    private final SecurityContextService securityContextService;
 
-    public DocumentQueryController(DocumentJpaRepository documentRepository) {
+    public DocumentQueryController(DocumentJpaRepository documentRepository,
+                                 SecurityContextService securityContextService) {
         this.documentRepository = Objects.requireNonNull(documentRepository);
+        this.securityContextService = Objects.requireNonNull(securityContextService);
     }
 
     /**
@@ -39,6 +43,13 @@ public class DocumentQueryController {
 
         logger.info("Getting document: id={}", id);
 
+        // Extrair userId do contexto de segurança
+        String userId = securityContextService.getCurrentUserId();
+        if (userId == null) {
+            logger.warn("Unauthorized attempt to get document: id={}", id);
+            return ResponseEntity.status(401).build();
+        }
+
         DocumentJpaEntity document = documentRepository.findById(id)
                 .orElse(null);
 
@@ -47,7 +58,12 @@ public class DocumentQueryController {
             return ResponseEntity.notFound().build();
         }
 
-        // TODO: Validar ownership (comparar com userId do contexto)
+        // Validar ownership (comparar com userId do contexto)
+        if (!securityContextService.isOwner(document.getUserId())) {
+            logger.warn("Access denied to document: id={}, owner={}, requester={}", 
+                       id, document.getUserId(), userId);
+            return ResponseEntity.status(403).build();
+        }
 
         DocumentDTO response = mapToDTO(document);
 
@@ -67,8 +83,12 @@ public class DocumentQueryController {
 
         logger.info("Listing documents: page={}, size={}, status={}, type={}", page, size, status, type);
 
-        // TODO: Extrair userId do contexto de segurança
-        String userId = "user-123";
+        // Extrair userId do contexto de segurança
+        String userId = securityContextService.getCurrentUserId();
+        if (userId == null) {
+            logger.warn("Unauthorized attempt to list documents");
+            return ResponseEntity.status(401).build();
+        }
 
         // Criar pageable com ordenação por createdAt DESC
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -86,9 +106,9 @@ public class DocumentQueryController {
             documents = documentRepository.findByUserId(userId, pageable);
         }
 
-        Page<DocumentDTO> result = documents.map(this::mapToDTO);
+        Page<DocumentDTO> responses = documents.map(this::mapToDTO);
 
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -98,8 +118,8 @@ public class DocumentQueryController {
         return new DocumentDTO(
                 entity.getId(),
                 entity.getOriginalName(),
-                entity.getType().name(),
-                entity.getStatus().name(),
+                entity.getType().toString(),
+                entity.getStatus().toString(),
                 entity.getExtractedText(),
                 entity.getClassificationLabel(),
                 entity.getClassificationConfidence(),
