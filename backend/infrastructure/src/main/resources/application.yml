@@ -41,3 +41,8 @@ app:
     baseUrl: http://localhost:11434
   async:
     processing-enabled: false
+  jwt:
+    secret: ${JWT_SECRET:your-secret-key-change-this-in-production-at-least-32-bytes-long}
+    expiration: 86400000      # 24 horas (em ms)
+    refresh:
+      expiration: 2592000000  # 30 dias (em ms)
