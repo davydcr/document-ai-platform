@@ -7,13 +7,13 @@ import com.davydcr.document.infrastructure.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
 /**
  * Inicialização com dados de seed para desenvolvimento e testes
- * Implementa proper authentication schema seeding
- * TODO: Integrar com PasswordEncoder quando Spring Security estiver configurado
+ * Implementa proper authentication schema seeding com PasswordEncoder
  */
 @Configuration
 public class DataInitializationConfig {
@@ -21,13 +21,14 @@ public class DataInitializationConfig {
     @Bean
     public CommandLineRunner initializeData(
             UserRepository userRepository,
-            RoleRepository roleRepository) {
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder) {
         return args -> {
             // Criar roles padrão
             createDefaultRoles(roleRepository);
             
             // Criar usuário padrão para testes
-            createDefaultUser(userRepository, roleRepository);
+            createDefaultUser(userRepository, roleRepository, passwordEncoder);
         };
     }
 
@@ -49,10 +50,9 @@ public class DataInitializationConfig {
     }
 
     /**
-     * Cria usuário padrão para testes e desenvolvimento.
-     * TODO: Usar PasswordEncoder após configurar Spring Security
+     * Cria usuário padrão para testes e desenvolvimento com senha criptografada
      */
-    private void createDefaultUser(UserRepository userRepository, RoleRepository roleRepository) {
+    private void createDefaultUser(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         // Verificar se usuário padrão já existe
         Optional<UserAccountEntity> existingUser = userRepository.findByEmail("admin@example.com");
         if (existingUser.isPresent()) {
@@ -67,10 +67,11 @@ public class DataInitializationConfig {
         UserAccountEntity admin = new UserAccountEntity();
         admin.setId("default-user-001");
         admin.setEmail("admin@example.com");
+        admin.setUsername("admin@example.com");
         admin.setFirstName("Admin");
         admin.setLastName("System");
-        // TODO: Usar PasswordEncoder após configurar Spring Security
-        admin.setPasswordHash("admin123");
+        // Usar PasswordEncoder para criptografar senha (BCrypt)
+        admin.setPasswordHash(passwordEncoder.encode("admin123"));
         admin.setActive(true);
 
         // Adicionar role

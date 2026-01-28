@@ -73,6 +73,22 @@ public class JwtProvider {
     }
 
     /**
+     * Extrai userId do token (novo método)
+     */
+    public String extractUserId(String token) {
+        Claims claims = getClaims(token);
+        Object userId = claims.get("userId");
+        return userId != null ? userId.toString() : claims.getSubject();
+    }
+
+    /**
+     * Valida um token JWT
+     */
+    public boolean validateToken(String token) {
+        return isTokenValid(token);
+    }
+
+    /**
      * Extrai roles do token
      */
     @SuppressWarnings("unchecked")

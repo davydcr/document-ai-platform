@@ -85,6 +85,12 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Spring Security Web (Authentication & Authorization) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
     <!-- Spring Security Crypto (BCrypt password hashing) -->
     <dependency>
       <groupId>org.springframework.security</groupId>
