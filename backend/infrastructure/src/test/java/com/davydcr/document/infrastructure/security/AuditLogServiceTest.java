@@ -30,7 +30,7 @@ class AuditLogServiceTest {
 
   @BeforeEach
   void setUp() {
-    auditLogService = new AuditLogService(auditLogRepository);
+    auditLogService = new AuditLogService(auditLogRepository, null);
     auditLogRepository.deleteAll();
   }
 

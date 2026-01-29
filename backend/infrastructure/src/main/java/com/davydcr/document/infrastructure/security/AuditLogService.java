@@ -2,6 +2,7 @@ package com.davydcr.document.infrastructure.security;
 
 import com.davydcr.document.infrastructure.persistence.entity.AuditLogEntity;
 import com.davydcr.document.infrastructure.repository.AuditLogRepository;
+import com.davydcr.document.infrastructure.service.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,7 @@ import java.util.UUID;
  * - Detectar atividades suspeitas
  * - Limpeza de logs antigos
  * - Análise de padrões de segurança
+ * - Enviar alertas de segurança por email
  */
 @Service
 public class AuditLogService {
@@ -33,9 +35,11 @@ public class AuditLogService {
   private static final int LOG_RETENTION_DAYS = 90;
 
   private final AuditLogRepository auditLogRepository;
+  private final EmailService emailService;
 
-  public AuditLogService(AuditLogRepository auditLogRepository) {
+  public AuditLogService(AuditLogRepository auditLogRepository, @org.springframework.beans.factory.annotation.Autowired(required = false) EmailService emailService) {
     this.auditLogRepository = auditLogRepository;
+    this.emailService = emailService;
   }
 
   /**
@@ -137,7 +141,20 @@ public class AuditLogService {
   public boolean isBruteForceAttempt(String email) {
     int failedAttempts = auditLogRepository.countFailedLoginAttemptsInMinutes(
         email, FAILED_LOGIN_WINDOW_MINUTES);
-    return failedAttempts >= FAILED_LOGIN_THRESHOLD;
+    boolean isBruteForce = failedAttempts >= FAILED_LOGIN_THRESHOLD;
+    
+    if (isBruteForce && emailService != null) {
+      logger.warn("Brute force attempt detected for email: {}", email);
+      // Get the IP address from the most recent failed attempt
+      List<AuditLogEntity> failedLogins = getFailedLoginAttempts(email, FAILED_LOGIN_WINDOW_MINUTES);
+      if (!failedLogins.isEmpty()) {
+        String ipAddress = failedLogins.get(0).getIpAddress();
+        // Send email alert
+        emailService.sendBruteForceAlert(email, ipAddress, failedAttempts);
+      }
+    }
+    
+    return isBruteForce;
   }
 
   /**
@@ -146,7 +163,15 @@ public class AuditLogService {
   public boolean isBruteForceByIp(String ipAddress) {
     int failedAttempts = auditLogRepository.countFailedLoginAttemptsByIpInMinutes(
         ipAddress, FAILED_LOGIN_WINDOW_MINUTES);
-    return failedAttempts >= FAILED_LOGIN_THRESHOLD;
+    boolean isBruteForce = failedAttempts >= FAILED_LOGIN_THRESHOLD;
+    
+    if (isBruteForce && emailService != null) {
+      logger.warn("Brute force attempt detected for IP: {}", ipAddress);
+      // Send email alert
+      emailService.sendAnomalousIpAlert(ipAddress, failedAttempts, failedAttempts);
+    }
+    
+    return isBruteForce;
   }
 
   /**
@@ -232,6 +257,38 @@ public class AuditLogService {
     LocalDateTime cutoffDate = LocalDateTime.now().minusDays(LOG_RETENTION_DAYS);
     auditLogRepository.deleteOldLogs(cutoffDate);
     logger.info("Audit log cleanup completed - removed logs older than {}", cutoffDate);
+  }
+
+  /**
+   * Envia relatório de segurança diário
+   * Executa diariamente às 8 da manhã
+   */
+  @Scheduled(cron = "0 0 8 * * *")
+  @Transactional
+  public void sendDailySecurityReport() {
+    try {
+      LocalDateTime startOfDay = LocalDateTime.now().minusHours(24);
+      
+      // Get statistics from yesterday
+      long totalEvents = auditLogRepository.count();
+      long successfulLogins = auditLogRepository.countByEventTypeAndCreatedAtAfter(
+          AuditEventType.LOGIN_SUCCESS.getCode(), startOfDay);
+      long failedLogins = auditLogRepository.countByEventTypeAndCreatedAtAfter(
+          AuditEventType.LOGIN_FAILURE.getCode(), startOfDay);
+      
+      java.util.Map<String, Object> reportData = new java.util.HashMap<>();
+      reportData.put("totalEvents", totalEvents);
+      reportData.put("successfulLogins", successfulLogins);
+      reportData.put("failedLogins", failedLogins);
+      reportData.put("uniqueIps", "0"); // Can be calculated from logs
+      
+      if (emailService != null) {
+        emailService.sendSecurityReport(reportData);
+        logger.info("Daily security report sent");
+      }
+    } catch (Exception e) {
+      logger.error("Error sending daily security report: {}", e.getMessage(), e);
+    }
   }
 
   /**

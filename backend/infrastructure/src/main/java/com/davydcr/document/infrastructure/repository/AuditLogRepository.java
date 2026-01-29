@@ -153,4 +153,10 @@ public interface AuditLogRepository extends JpaRepository<AuditLogEntity, String
    */
   @Query("SELECT COUNT(al) FROM AuditLogEntity al WHERE al.eventType = :eventType")
   long countByEventType(@Param("eventType") String eventType);
+
+  /**
+   * Contar logs por tipo de evento e data
+   */
+  @Query("SELECT COUNT(al) FROM AuditLogEntity al WHERE al.eventType = :eventType AND al.createdAt >= :createdAtAfter")
+  long countByEventTypeAndCreatedAtAfter(@Param("eventType") String eventType, @Param("createdAtAfter") LocalDateTime createdAtAfter);
 }
