@@ -72,9 +72,12 @@
     <root level="${LOG_LEVEL}">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC_FILE"/>
-        <springProfile name="prod">
-            <appender-ref ref="ASYNC_JSON"/>
-        </springProfile>
     </root>
+
+    <springProfile name="prod">
+        <root level="${LOG_LEVEL}">
+            <appender-ref ref="ASYNC_JSON"/>
+        </root>
+    </springProfile>
 
 </configuration>
