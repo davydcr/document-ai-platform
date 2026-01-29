@@ -158,6 +158,13 @@ public class AuditLogService {
   }
 
   /**
+   * Busca todos os logs de auditoria
+   */
+  public Page<AuditLogEntity> getAllAuditLogs(Pageable pageable) {
+    return auditLogRepository.findAll(pageable);
+  }
+
+  /**
    * Busca logs de auditoria por usuário
    */
   public Page<AuditLogEntity> getUserAuditLogs(String userId, Pageable pageable) {
