@@ -20,7 +20,7 @@ import java.util.Objects;
  * Endpoints para recuperar e listar documentos (read-only).
  */
 @RestController
-@RequestMapping("/api/documents")
+@RequestMapping("/api/documents/query")
 public class DocumentQueryController {
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentQueryController.class);

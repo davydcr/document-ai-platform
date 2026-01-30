@@ -20,7 +20,7 @@ import java.util.Map;
  * Fornece métricas e status da fila de processamento.
  */
 @RestController
-@RequestMapping("/documents/async/dashboard")
+@RequestMapping("/api/documents/async/dashboard")
 @Tag(name = "Async Dashboard", description = "Dashboard de monitoramento do processamento assíncrono")
 public class DocumentAsyncDashboardController {
 

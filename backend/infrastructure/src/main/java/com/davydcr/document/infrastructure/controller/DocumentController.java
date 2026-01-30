@@ -31,7 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/documents")
+@RequestMapping("/api/documents")
 @Tag(name = "Documents", description = "API para gerenciamento de documentos")
 public class DocumentController {
 

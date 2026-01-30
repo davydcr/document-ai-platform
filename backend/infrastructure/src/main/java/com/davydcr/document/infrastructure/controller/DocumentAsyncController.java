@@ -32,7 +32,7 @@ import java.util.UUID;
  * cliente usa GET /documents/async/{id}/status para verificar progresso.
  */
 @RestController
-@RequestMapping("/documents/async")
+@RequestMapping("/api/documents/async")
 @Tag(name = "Async Documents", description = "API assíncrona para processamento de documentos")
 public class DocumentAsyncController {
 

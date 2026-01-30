@@ -26,7 +26,7 @@ import java.util.Map;
  * 🔐 Requer role ADMIN para todos os endpoints
  */
 @RestController
-@RequestMapping("/admin/audit")
+@RequestMapping("/api/admin/audit")
 @Tag(name = "Audit Management", description = "Endpoints administrativos para auditoria e segurança")
 @SecurityRequirement(name = "bearer-jwt")
 @CrossOrigin(origins = "*")
