@@ -19,7 +19,9 @@ export const documentService = {
     const formData = new FormData()
     formData.append('file', file)
     return api.post(`/documents/async/upload?timeoutMs=${timeoutMs}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     })
   },
 

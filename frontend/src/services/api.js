@@ -4,19 +4,22 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  timeout: 30000
 })
 
-// Interceptor para adicionar JWT token
+// Interceptor para adicionar JWT token e Content-Type
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    
+    // Definir Content-Type apenas para requisições que não são FormData
+    if (!(config.data instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json'
+    }
+    
     return config
   },
   (error) => Promise.reject(error)

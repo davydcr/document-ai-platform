@@ -7,7 +7,7 @@ export default function UploadComponent({ onUploadComplete }) {
   const [dragActive, setDragActive] = useState(false)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [timeout, setTimeout] = useState(30000)
+  const [timeoutMs, setTimeoutMs] = useState(30000)
 
   const handleDrag = (e) => {
     e.preventDefault()
@@ -37,7 +37,7 @@ export default function UploadComponent({ onUploadComplete }) {
     setProgress(0)
 
     try {
-      const response = await documentService.uploadAsync(file, timeout)
+      const response = await documentService.uploadAsync(file, timeoutMs)
       toast.success('Documento enviado! Processando em background...')
       onUploadComplete(response.data)
       setProgress(0)
@@ -112,15 +112,15 @@ export default function UploadComponent({ onUploadComplete }) {
           </div>
           <input
             type="range"
-            value={timeout}
-            onChange={(e) => setTimeout(Math.max(5000, Math.min(300000, parseInt(e.target.value))))}
+            value={timeoutMs}
+            onChange={(e) => setTimeoutMs(Math.max(5000, Math.min(300000, parseInt(e.target.value))))}
             min="5000"
             max="300000"
             step="5000"
             className="w-full"
           />
           <div className="flex justify-between items-center mt-2">
-            <span className="text-sm text-gray-600">{(timeout / 1000).toFixed(0)}s</span>
+            <span className="text-sm text-gray-600">{(timeoutMs / 1000).toFixed(0)}s</span>
             <span className="text-xs text-gray-500">Min: 5s | Max: 5min</span>
           </div>
         </div>
