@@ -20,13 +20,19 @@ export default function LoginPage() {
 
     try {
       const response = await authService.login(email, password)
-      const { user, accessToken, refreshToken } = response.data
+      const { token, refreshToken, email: userEmail, roles } = response.data
 
-      login(user, accessToken, refreshToken)
+      // Criar objeto de usuário com dados da resposta
+      const user = {
+        email: userEmail,
+        roles: roles || []
+      }
+
+      login(user, token, refreshToken)
       toast.success('Login realizado com sucesso!')
       navigate('/')
     } catch (error) {
-      const message = error.response?.data?.message || 'Erro ao fazer login'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Erro ao fazer login'
       setError(message)
       toast.error(message)
     } finally {
