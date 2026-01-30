@@ -3,17 +3,23 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+# Copiar package files (contexto é a raiz do projeto)
+COPY frontend/package*.json ./
 
-COPY . .
+# Instalar dependências (use npm install se não houver package-lock.json)
+RUN npm install
+
+# Copiar código fonte
+COPY frontend/ .
+
+# Build
 RUN npm run build
 
 # Runtime stage
 FROM nginx:alpine
 
 # Copiar configuração do nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copiar build
 COPY --from=builder /app/dist /usr/share/nginx/html

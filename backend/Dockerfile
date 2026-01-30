@@ -1,8 +1,8 @@
-FROM maven:3.9-eclipse-temurin-17 AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /build
 
-# Copiar pom.xml
+# Copiar pom.xml files (contexto é a raiz do projeto)
 COPY backend/pom.xml ./
 COPY backend/application/pom.xml ./application/
 COPY backend/domain/pom.xml ./domain/
@@ -11,19 +11,19 @@ COPY backend/infrastructure/pom.xml ./infrastructure/
 # Download dependencies
 RUN mvn dependency:go-offline
 
-# Copiar código
-COPY backend/. .
+# Copiar código fonte completo
+COPY backend/ .
 
 # Build
 RUN mvn clean package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Copiar JAR gerado
-COPY --from=builder /build/application/target/document-ai-application-*.jar app.jar
+# Copiar JAR gerado (arquivo correto)
+COPY --from=builder /build/application/target/application-*.jar app.jar
 
 # Expor porta
 EXPOSE 8080
