@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env.local
+.env.*.local
+.DS_Store
+*.log
+*.tgz
+.idea/
+.vscode/*
+!.vscode/extensions.json
+coverage/
+.nyc_output/
