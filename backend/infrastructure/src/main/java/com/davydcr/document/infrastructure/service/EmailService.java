@@ -2,6 +2,7 @@ package com.davydcr.document.infrastructure.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Serviço de envio de emails para alertas de segurança.
@@ -37,11 +39,11 @@ public class EmailService {
     @Value("${app.email.enabled:false}")
     private boolean emailEnabled;
 
-    private final JavaMailSender mailSender;
+    private final Optional<JavaMailSender> mailSender;
     private final EmailTemplateService emailTemplateService;
 
-    public EmailService(JavaMailSender mailSender, EmailTemplateService emailTemplateService) {
-        this.mailSender = mailSender;
+    public EmailService(@Autowired(required = false) JavaMailSender mailSender, EmailTemplateService emailTemplateService) {
+        this.mailSender = Optional.ofNullable(mailSender);
         this.emailTemplateService = emailTemplateService;
     }
 
@@ -176,8 +178,8 @@ public class EmailService {
      * Envia email simples
      */
     public void sendSimpleEmail(String to, String subject, String text) {
-        if (!emailEnabled) {
-            logger.debug("Email disabled, skipping simple email");
+        if (!emailEnabled || mailSender.isEmpty()) {
+            logger.debug("Email disabled or mailSender not configured, skipping simple email");
             return;
         }
 
@@ -188,7 +190,7 @@ public class EmailService {
             message.setSubject(subject);
             message.setText(text);
             
-            mailSender.send(message);
+            mailSender.get().send(message);
             logger.info("Simple email sent to: {}", to);
         } catch (Exception e) {
             logger.error("Erro ao enviar email simples: {}", e.getMessage(), e);
@@ -199,12 +201,12 @@ public class EmailService {
      * Envia email HTML
      */
     public void sendHtmlEmail(String to, String subject, String htmlContent) throws MessagingException {
-        if (!emailEnabled) {
-            logger.debug("Email disabled, skipping HTML email");
+        if (!emailEnabled || mailSender.isEmpty()) {
+            logger.debug("Email disabled or mailSender not configured, skipping HTML email");
             return;
         }
 
-        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessage message = mailSender.get().createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         
         helper.setFrom(mailFrom);
@@ -212,7 +214,7 @@ public class EmailService {
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
         
-        mailSender.send(message);
+        mailSender.get().send(message);
         logger.debug("HTML email sent to: {}", to);
     }
 
@@ -220,8 +222,8 @@ public class EmailService {
      * Envia email para múltiplos destinatários
      */
     public void sendBulkEmail(String[] recipients, String subject, String htmlContent) throws MessagingException {
-        if (!emailEnabled) {
-            logger.debug("Email disabled, skipping bulk email");
+        if (!emailEnabled || mailSender.isEmpty()) {
+            logger.debug("Email disabled or mailSender not configured, skipping bulk email");
             return;
         }
 

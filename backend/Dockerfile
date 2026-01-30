@@ -22,8 +22,8 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Copiar JAR gerado (arquivo correto)
-COPY --from=builder /build/application/target/application-*.jar app.jar
+# Copiar JAR gerado (arquivo correto - do infrastructure que tem a main class)
+COPY --from=builder /build/infrastructure/target/infrastructure-*.jar app.jar
 
 # Expor porta
 EXPOSE 8080
