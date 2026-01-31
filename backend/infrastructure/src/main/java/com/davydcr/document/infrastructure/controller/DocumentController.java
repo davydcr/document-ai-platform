@@ -13,6 +13,7 @@ import com.davydcr.document.application.usecase.GetDocumentUseCase;
 import com.davydcr.document.application.usecase.ProcessDocumentUseCase;
 import com.davydcr.document.domain.model.DocumentId;
 import com.davydcr.document.infrastructure.observability.ObservabilityService;
+import com.davydcr.document.infrastructure.persistence.DocumentJpaRepository;
 import com.davydcr.document.infrastructure.service.DocumentStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,7 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/documents")
+@RequestMapping("/api/documents-deprecated")
 @Tag(name = "Documents", description = "API para gerenciamento de documentos")
 public class DocumentController {
 
@@ -42,6 +43,7 @@ public class DocumentController {
     private final ExtractDocumentContentUseCase extractDocumentContentUseCase;
     private final GetDocumentUseCase getDocumentUseCase;
     private final DocumentStorageService storageService;
+    private final DocumentJpaRepository documentRepository;
     private final ObservabilityService observabilityService;
 
     public DocumentController(ProcessDocumentUseCase processDocumentUseCase,
@@ -49,15 +51,20 @@ public class DocumentController {
                              ExtractDocumentContentUseCase extractDocumentContentUseCase,
                              GetDocumentUseCase getDocumentUseCase,
                              DocumentStorageService storageService,
+                             DocumentJpaRepository documentRepository,
                              ObservabilityService observabilityService) {
         this.processDocumentUseCase = processDocumentUseCase;
         this.classifyDocumentUseCase = classifyDocumentUseCase;
         this.extractDocumentContentUseCase = extractDocumentContentUseCase;
         this.getDocumentUseCase = getDocumentUseCase;
         this.storageService = storageService;
+        this.documentRepository = documentRepository;
         this.observabilityService = observabilityService;
     }
 
+    // NOTA: Upload endpoint movido para DocumentAsyncController (/api/documents/async/upload)
+    // Este endpoint síncron é desabilitado em favor do assíncrono
+    /*
     @PostMapping("/upload")
     @Operation(summary = "Fazer upload de um novo documento",
         description = "Realiza o upload de um novo documento para processamento com OCR real. " +
@@ -122,6 +129,7 @@ public class DocumentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    */
 
     @PostMapping("/{documentId}/classify")
     @Operation(summary = "Classificar um documento",
@@ -232,10 +240,18 @@ public class DocumentController {
         @ApiResponse(responseCode = "200", description = "Lista de documentos retornada com sucesso"),
         @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    public ResponseEntity<String> listDocuments() {
+    public ResponseEntity<?> listDocuments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         try {
-            logger.debug("Listing all documents");
-            return ResponseEntity.ok("{\"message\": \"Document listing endpoint\"}");
+            logger.debug("Listing all documents - page: {}, size: {}", page, size);
+            
+            // Buscar documentos do repositório com paginação
+            org.springframework.data.domain.Page<?> documents = documentRepository.findAll(
+                org.springframework.data.domain.PageRequest.of(page, size)
+            );
+            
+            return ResponseEntity.ok(documents);
         } catch (Exception e) {
             logger.error("Error listing documents", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
