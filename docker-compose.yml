@@ -110,10 +110,28 @@ services:
     networks:
       - document-ai
 
+  # Ollama - LLM Service for Document Classification
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - document-ai
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:11434/api/tags" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+
 volumes:
   postgres_data:
   rabbitmq_data:
   redis_data:
+  ollama_data:
 
 networks:
   document-ai:
