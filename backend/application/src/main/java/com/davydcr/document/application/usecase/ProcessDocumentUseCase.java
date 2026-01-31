@@ -106,7 +106,18 @@ public class ProcessDocumentUseCase {
             ExtractedContent extractedContent = performOcr(input.getFilePath(), input.getFileType());
 
             // Classificar documento
-            DocumentClassification classification = classificationService.classify(extractedContent);
+            DocumentClassification classification;
+            try {
+                classification = classificationService.classify(extractedContent);
+                if (classification == null) {
+                    throw new DomainException("Classification service returned null") {};
+                }
+            } catch (Exception classifyError) {
+                String errorMsg = "Error classifying document: " + classifyError.getMessage();
+                document.failProcessing(errorMsg);
+                documentRepository.save(document);
+                throw new DomainException(errorMsg) {};
+            }
 
             // Criar resultado de processamento
             ProcessingResult result = new ProcessingResult(
@@ -137,9 +148,16 @@ public class ProcessDocumentUseCase {
             );
 
         } catch (DomainException e) {
+            // Transição de estado para FAILED mantendo documento em RECEIVED
+            document.failProcessing(e.getMessage());
+            documentRepository.save(document);
             throw e;
         } catch (Exception e) {
-            throw new DomainException("Error processing document: " + e.getMessage()) {};
+            // Transição de estado para FAILED
+            String errorMsg = "Error processing document: " + e.getMessage();
+            document.failProcessing(errorMsg);
+            documentRepository.save(document);
+            throw new DomainException(errorMsg) {};
         }
     }
 

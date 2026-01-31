@@ -38,6 +38,9 @@ public class DocumentJpaEntity {
     @Column
     private Integer classificationConfidence;
 
+    @Column(columnDefinition = "TEXT")
+    private String errorMessage;
+
     public DocumentJpaEntity() {
     }
 
@@ -60,6 +63,11 @@ public class DocumentJpaEntity {
                 document.getCreatedAt(),
                 userId
         );
+
+        // Armazenar mensagem de erro se documento falhou
+        if (document.getErrorMessage() != null) {
+            entity.errorMessage = document.getErrorMessage();
+        }
 
         // Se houver histórico de processamento com extractedContent e classification
         if (!document.getProcessingHistory().isEmpty()) {
@@ -160,5 +168,13 @@ public class DocumentJpaEntity {
 
     public void setClassificationConfidence(Integer classificationConfidence) {
         this.classificationConfidence = classificationConfidence;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 }

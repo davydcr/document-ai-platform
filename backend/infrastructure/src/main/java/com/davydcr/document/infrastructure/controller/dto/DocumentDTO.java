@@ -10,6 +10,7 @@ public record DocumentDTO(
         String extractedText,
         String classificationLabel,
         Integer classificationConfidence,
+        String errorMessage,
         Instant createdAt
 ) {
 }

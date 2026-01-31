@@ -19,6 +19,7 @@ public class Document {
     private final DocumentType type;
     private DocumentStatus status;
     private final Instant createdAt;
+    private String errorMessage;
     private final List<ProcessingResult> processingHistory = new ArrayList<>();
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
@@ -124,6 +125,7 @@ public class Document {
         }
 
         this.status = DocumentStatus.FAILED;
+        this.errorMessage = error;
 
         // Publica eventos
         publishEvent(new DocumentStateChangedEvent(
@@ -184,5 +186,9 @@ public class Document {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
     }
 }
