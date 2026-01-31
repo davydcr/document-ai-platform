@@ -106,8 +106,8 @@ public class DocumentAsyncController {
                 fileType
             );
 
-            // Iniciar processamento assíncrono em background
-            asyncProcessingService.processDocumentAsync(input, filename)
+            // Iniciar processamento assíncrono em background (passar userId para a thread assíncrona)
+            asyncProcessingService.processDocumentAsync(input, filename, userId)
                 .thenAccept(result -> {
                     long elapsed = System.currentTimeMillis() - startTime;
                     observabilityService.recordUploadSuccess(elapsed);

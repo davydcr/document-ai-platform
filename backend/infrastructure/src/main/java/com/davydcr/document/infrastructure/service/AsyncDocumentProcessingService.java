@@ -5,6 +5,7 @@ import com.davydcr.document.application.dto.ProcessDocumentOutput;
 import com.davydcr.document.application.port.DocumentRepository;
 import com.davydcr.document.application.usecase.ProcessDocumentUseCase;
 import com.davydcr.document.domain.model.DocumentId;
+import com.davydcr.document.infrastructure.security.SecurityContextService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,15 +48,23 @@ public class AsyncDocumentProcessingService {
      * 
      * @param input Dados de entrada para processamento
      * @param fileName Nome do arquivo original
+     * @param userId ID do usuário que fez o upload (propagado para a thread assíncrona)
      * @return CompletableFuture com resultado do processamento
      */
     @Async("documentProcessingExecutor")
     public CompletableFuture<ProcessDocumentOutput> processDocumentAsync(
             ProcessDocumentInput input,
-            String fileName) {
+            String fileName,
+            String userId) {
 
         try {
-            log.info("Iniciando processamento assíncrono de documento: {}", fileName);
+            // Propagar userId para a thread assíncrona via ThreadLocal
+            if (userId != null) {
+                SecurityContextService.setAsyncUserId(userId);
+                log.info("Iniciando processamento assíncrono de documento: {} para usuário: {}", fileName, userId);
+            } else {
+                log.info("Iniciando processamento assíncrono de documento: {} (usuário não identificado)", fileName);
+            }
             
             // Executar processamento (OCR + classificação)
             ProcessDocumentOutput result = processDocumentUseCase
@@ -91,6 +100,9 @@ public class AsyncDocumentProcessingService {
             }
             
             return CompletableFuture.failedFuture(e);
+        } finally {
+            // Limpar ThreadLocal após processamento
+            SecurityContextService.clearAsyncUserId();
         }
     }
 
