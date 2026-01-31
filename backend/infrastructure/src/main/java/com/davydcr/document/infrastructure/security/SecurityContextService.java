@@ -12,44 +12,68 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 /**
  * Serviço para acesso ao contexto de segurança.
  * Lê o userId do atributo da requisição (setado pelo JwtAuthenticationFilter).
+ * Também suporta ThreadLocal para processamento assíncrono.
  */
 @Service
 public class SecurityContextService {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityContextService.class);
+    
+    // ThreadLocal para propagar userId para threads assíncronas
+    private static final ThreadLocal<String> asyncUserIdHolder = new ThreadLocal<>();
+
+    /**
+     * Define o userId para a thread atual (usado em processamento assíncrono).
+     */
+    public static void setAsyncUserId(String userId) {
+        asyncUserIdHolder.set(userId);
+    }
+
+    /**
+     * Limpa o userId da thread atual.
+     */
+    public static void clearAsyncUserId() {
+        asyncUserIdHolder.remove();
+    }
 
     /**
      * Obtém o ID do usuário atual.
-     * Primeiro tenta ler do request attribute (mais confiável),
-     * depois do SecurityContextHolder como fallback.
+     * Ordem de prioridade:
+     * 1. ThreadLocal (para processamento assíncrono)
+     * 2. Request attribute (setado pelo JwtAuthenticationFilter)
+     * 3. SecurityContextHolder (fallback)
      */
     public String getCurrentUserId() {
         try {
-            // Primeiro, tentar obter do request attribute (setado pelo JwtAuthenticationFilter)
+            // 1. Primeiro, verificar ThreadLocal (para processamento assíncrono)
+            String asyncUserId = asyncUserIdHolder.get();
+            if (asyncUserId != null) {
+                logger.debug("getCurrentUserId() from ThreadLocal: {}", asyncUserId);
+                return asyncUserId;
+            }
+            
+            // 2. Tentar obter do request attribute (setado pelo JwtAuthenticationFilter)
             ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attrs != null) {
                 HttpServletRequest request = attrs.getRequest();
                 Object userId = request.getAttribute("userId");
-                logger.info("getCurrentUserId() request attribute userId={}", userId);
+                logger.debug("getCurrentUserId() request attribute userId={}", userId);
                 if (userId != null) {
                     return userId.toString();
                 }
-            } else {
-                logger.info("getCurrentUserId() ServletRequestAttributes is null");
             }
             
-            // Fallback: tentar do SecurityContextHolder
+            // 3. Fallback: tentar do SecurityContextHolder
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            logger.info("getCurrentUserId() SecurityContextHolder auth={}", auth);
             if (auth != null && auth.isAuthenticated() && auth.getPrincipal() != null) {
                 String principal = auth.getPrincipal().toString();
-                logger.info("getCurrentUserId() principal={}", principal);
                 if (!"anonymousUser".equals(principal)) {
+                    logger.debug("getCurrentUserId() from SecurityContext: {}", principal);
                     return principal;
                 }
             }
             
-            logger.info("getCurrentUserId() returning null");
+            logger.debug("getCurrentUserId() returning null - no user context available");
             return null;
         } catch (Exception e) {
             logger.error("getCurrentUserId() error: {}", e.getMessage());
