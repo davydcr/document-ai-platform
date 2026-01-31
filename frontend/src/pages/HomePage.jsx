@@ -24,7 +24,16 @@ export default function HomePage() {
     try {
       setLoading(true)
       const response = await documentService.getDocuments(0, 50)
-      setDocuments(response.data.content || [])
+      // Mapear campos do backend para o formato esperado pelo frontend
+      const mappedDocs = (response.data.content || []).map(doc => ({
+        ...doc,
+        fileName: doc.originalName,
+        classification: doc.classificationLabel ? {
+          label: doc.classificationLabel,
+          confidence: doc.classificationConfidence ? doc.classificationConfidence / 100 : null
+        } : null
+      }))
+      setDocuments(mappedDocs)
     } catch (error) {
       toast.error('Erro ao carregar documentos')
     } finally {
