@@ -7,7 +7,7 @@ import { Lock, Mail, AlertCircle } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@example.com')
-  const [password, setPassword] = useState('password123')
+  const [password, setPassword] = useState('admin123')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { login } = useAuth()

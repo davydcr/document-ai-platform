@@ -34,14 +34,30 @@ export default function UploadComponent({ onUploadComplete }) {
     }
 
     setLoading(true)
-    setProgress(0)
+    setProgress(10)
 
     try {
+      // Simular progresso durante upload
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + Math.random() * 30
+          return Math.min(newProgress, 90)
+        })
+      }, 200)
+
       const response = await documentService.uploadAsync(file, timeoutMs)
-      toast.success('Documento enviado! Processando em background...')
+      clearInterval(progressInterval)
+      
+      setProgress(100)
+      toast.success(`✅ Documento enviado! ID: ${response.data?.documentId || 'processing'}`)
+      
+      // Aguarda um pouco para mostrar 100%
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       onUploadComplete(response.data)
       setProgress(0)
     } catch (error) {
+      setProgress(0)
       toast.error(error.response?.data?.message || 'Erro ao enviar arquivo')
     } finally {
       setLoading(false)

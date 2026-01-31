@@ -37,9 +37,11 @@ export default function HomePage() {
     navigate('/login')
   }
 
-  const handleUploadComplete = (newDocument) => {
-    setDocuments([newDocument, ...documents])
-    toast.success('Documento enviado com sucesso!')
+  const handleUploadComplete = async (uploadResponse) => {
+    // Upload retorna 202 com apenas documentId e status
+    // Atualizar lista de documentos do servidor
+    setActiveTab('documents')
+    await fetchDocuments()
   }
 
   return (
