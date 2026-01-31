@@ -21,6 +21,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/documents/async/dashboard")
+@CrossOrigin(origins = "*")
 @Tag(name = "Async Dashboard", description = "Dashboard de monitoramento do processamento assíncrono")
 public class DocumentAsyncDashboardController {
 

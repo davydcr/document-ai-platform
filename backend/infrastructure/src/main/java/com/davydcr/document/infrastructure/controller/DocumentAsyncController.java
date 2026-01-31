@@ -33,6 +33,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/documents/async")
+@CrossOrigin(origins = "*")
 @Tag(name = "Async Documents", description = "API assíncrona para processamento de documentos")
 public class DocumentAsyncController {
 

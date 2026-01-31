@@ -20,7 +20,8 @@ import java.util.Objects;
  * Endpoints para recuperar e listar documentos (read-only).
  */
 @RestController
-@RequestMapping("/api/documents/query")
+@RequestMapping("/api/documents")
+@CrossOrigin(origins = "*")
 public class DocumentQueryController {
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentQueryController.class);
@@ -123,6 +124,7 @@ public class DocumentQueryController {
                 entity.getExtractedText(),
                 entity.getClassificationLabel(),
                 entity.getClassificationConfidence(),
+                entity.getErrorMessage(),
                 entity.getCreatedAt()
         );
     }
