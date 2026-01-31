@@ -14,14 +14,21 @@ export default function DocumentListComponent({ documents: initialDocs, loading,
     setDocuments(initialDocs)
   }, [initialDocs])
 
-  // Polling para atualizar status
+  // Polling para atualizar status - aumentado para 10s com verificação de COMPLETED
   useEffect(() => {
+    // Não fazer polling se já tem COMPLETED ou FAILED
+    const hasActiveProcessing = initialDocs?.some(doc => 
+      doc.status !== 'COMPLETED' && doc.status !== 'FAILED'
+    )
+    
+    if (!hasActiveProcessing) return
+
     const interval = setInterval(() => {
       onRefresh?.()
-    }, 5000)
+    }, 10000) // 10 segundos ao invés de 5
 
     return () => clearInterval(interval)
-  }, [onRefresh])
+  }, [onRefresh, initialDocs])
 
   const getStatusIcon = (status) => {
     switch (status) {

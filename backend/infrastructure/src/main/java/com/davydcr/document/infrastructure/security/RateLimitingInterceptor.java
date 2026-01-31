@@ -58,7 +58,7 @@ public class RateLimitingInterceptor implements HandlerInterceptor {
       return handleProcessingRateLimit(userId, request, response);
     }
 
-    // Read endpoints: 60 requisições por minuto (menos restritivo)
+    // Read endpoints: 600 requisições por minuto (10 por segundo - muito generoso para polling)
     if ("GET".equals(method)) {
       return handleReadRateLimit(userId, request, response);
     }
@@ -142,7 +142,7 @@ public class RateLimitingInterceptor implements HandlerInterceptor {
     } else {
       response.setStatus(429);
       response.setContentType("application/json");
-      response.getWriter().write("{\"error\": \"Limite de requisições excedido. Máximo: 60 por minuto.\"}");
+      response.getWriter().write("{\"error\": \"Limite de requisições excedido. Máximo: 600 por minuto.\"}");
       return false;
     }
   }
@@ -184,7 +184,8 @@ public class RateLimitingInterceptor implements HandlerInterceptor {
    * Cria bucket para read
    */
   private Bucket createReadBucket() {
-    Bandwidth limit = Bandwidth.classic(60, Refill.intervally(60, Duration.ofMinutes(1)));
+    // 600 por minuto (10 por segundo) - muito generoso para polling do frontend
+    Bandwidth limit = Bandwidth.classic(600, Refill.intervally(600, Duration.ofMinutes(1)));
     return Bucket4j.builder().addLimit(limit).build();
   }
 
