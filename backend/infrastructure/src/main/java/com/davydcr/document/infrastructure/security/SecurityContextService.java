@@ -1,62 +1,87 @@
 package com.davydcr.document.infrastructure.security;
 
-import org.springframework.stereotype.Component;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * Utilitário para extrair informações do usuário autenticado.
- * Utiliza ThreadLocal configurado pelo UserContextFilter.
+ * Serviço para acesso ao contexto de segurança.
+ * Lê o userId do atributo da requisição (setado pelo JwtAuthenticationFilter).
  */
-@Component
+@Service
 public class SecurityContextService {
 
+    private static final Logger logger = LoggerFactory.getLogger(SecurityContextService.class);
+
     /**
-     * Extrai o userId do contexto de thread.
-     * O userId é preenchido pelo UserContextFilter do header X-User-ID.
-     * 
-     * @return userId do usuário autenticado ou null se não encontrado
+     * Obtém o ID do usuário atual.
+     * Primeiro tenta ler do request attribute (mais confiável),
+     * depois do SecurityContextHolder como fallback.
      */
     public String getCurrentUserId() {
         try {
-            return UserContextFilter.getUserId();
+            // Primeiro, tentar obter do request attribute (setado pelo JwtAuthenticationFilter)
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                HttpServletRequest request = attrs.getRequest();
+                Object userId = request.getAttribute("userId");
+                logger.info("getCurrentUserId() request attribute userId={}", userId);
+                if (userId != null) {
+                    return userId.toString();
+                }
+            } else {
+                logger.info("getCurrentUserId() ServletRequestAttributes is null");
+            }
+            
+            // Fallback: tentar do SecurityContextHolder
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            logger.info("getCurrentUserId() SecurityContextHolder auth={}", auth);
+            if (auth != null && auth.isAuthenticated() && auth.getPrincipal() != null) {
+                String principal = auth.getPrincipal().toString();
+                logger.info("getCurrentUserId() principal={}", principal);
+                if (!"anonymousUser".equals(principal)) {
+                    return principal;
+                }
+            }
+            
+            logger.info("getCurrentUserId() returning null");
+            return null;
         } catch (Exception e) {
+            logger.error("getCurrentUserId() error: {}", e.getMessage());
             return null;
         }
     }
 
     /**
-     * Extrai o userId do context, lançando exceção se não autenticado.
-     * 
-     * @return userId do usuário autenticado
-     * @throws IllegalStateException se não autenticado
-     */
-    public String getCurrentUserIdOrThrow() {
-        String userId = getCurrentUserId();
-        
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalStateException("User is not authenticated");
-        }
-        
-        return userId;
-    }
-
-    /**
-     * Verifica se o usuário atual é dono do recurso.
-     * 
-     * @param resourceOwnerId ID do proprietário do recurso
-     * @return true se o usuário atual é proprietário
-     */
-    public boolean isOwner(String resourceOwnerId) {
-        String currentUserId = getCurrentUserId();
-        return currentUserId != null && currentUserId.equals(resourceOwnerId);
-    }
-
-    /**
-     * Verifica se o usuário está autenticado.
-     * 
-     * @return true se autenticado
+     * Verifica se existe um usuário autenticado no contexto.
      */
     public boolean isAuthenticated() {
-        return getCurrentUserId() != null;
+        String userId = getCurrentUserId();
+        return userId != null && !userId.isEmpty();
+    }
+
+    /**
+     * Verifica se o usuário atual é o proprietário do recurso.
+     * @param ownerId ID do proprietário do recurso
+     * @return true se o usuário atual é o proprietário
+     */
+    public boolean isOwner(String ownerId) {
+        String currentUserId = getCurrentUserId();
+        return currentUserId != null && currentUserId.equals(ownerId);
+    }
+
+    /**
+     * Verifica se o usuário atual tem acesso ao recurso (é o proprietário).
+     * @param ownerId ID do proprietário do recurso
+     * @return true se o usuário tem acesso
+     */
+    public boolean hasAccess(String ownerId) {
+        return isOwner(ownerId);
     }
 }
 

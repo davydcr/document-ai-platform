@@ -41,19 +41,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             // Se houver token válido, autenticar
-            if (token != null && jwtProvider.validateToken(token)) {
+            if (token != null && jwtProvider.isTokenValid(token)) {
                 String userId = jwtProvider.extractUserId(token);
                 
-                // Criar autenticação e setarno contexto de segurança
+                // Criar autenticação e setar no contexto de segurança
                 UsernamePasswordAuthenticationToken authentication = 
                     new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
                 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 
-                // Também setarno header para compatibilidade com UserContextFilter
+                // IMPORTANTE: Também setar no UserContextFilter ThreadLocal para compatibilidade com SecurityContextService
+                UserContextFilter.setUserId(userId);
+                
+                // Também setar no atributo da requisição
                 request.setAttribute("userId", userId);
                 
-                logger.debug("JWT token validado para usuário: {}", userId);
+                // Log com INFO para garantir visibilidade
+                logger.info("JWT token validado para usuário: {} - setAttribute userId={}", userId, userId);
+            } else if (token == null) {
+                logger.debug("Nenhum token JWT encontrado no header Authorization");
+            } else {
+                logger.debug("Token JWT inválido ou expirado");
             }
         } catch (Exception e) {
             logger.debug("Erro ao validar JWT token: {}", e.getMessage());
